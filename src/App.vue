@@ -1,8 +1,10 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { fetchOfficialFeed } from './lib/feed.js'
-import { computeAll, matchesOnDate, todayStr, normalizeIso, playedByDate, knockoutByStage, slotLabel } from './lib/standings.js'
+import { computeAll, matchesOnDate, todayStr, normalizeIso, playedByDate } from './lib/standings.js'
+import { resolveBracket } from './lib/bracketData.js'
 import { TEAM_BY_CODE } from './lib/teams.js'
+import BracketBoard from './components/BracketBoard.vue'
 
 /* ---------------- i18n ---------------- */
 const I18N = {
@@ -63,8 +65,7 @@ onUnmounted(() => clearInterval(timer))
 const matches = computed(() => (feed.value && feed.value.matches) || [])
 const all = computed(() => computeAll(matches.value))
 const played = computed(() => playedByDate(matches.value))
-const knockout = computed(() => knockoutByStage(matches.value))
-const slot = (code) => slotLabel(code)
+const bracket = computed(() => resolveBracket(matches.value))
 const updatedAt = computed(() => feed.value && feed.value.updatedAt ? new Date(feed.value.updatedAt).toLocaleString(lang.value) : '')
 
 // Hoy (o, si no hay, el próximo día con partidos).
@@ -224,27 +225,7 @@ function noteFor (code, letter) {
         <!-- LLAVES -->
         <section v-if="tab === 'llaves'" class="panel">
           <p class="legend">{{ t.bracketNote }}</p>
-          <div v-for="rnd in knockout" :key="rnd.stage" class="koround">
-            <h3 class="kohead">{{ t.stages[rnd.stage] || rnd.stage }}</h3>
-            <div class="komatches">
-              <div v-for="(m, i) in rnd.list" :key="i" class="komatch">
-                <div class="koside">
-                  <span class="flag">{{ slot(m.home).flag }}</span>
-                  <span class="kname" :class="{ tbd: !slot(m.home).real }">{{ slot(m.home).name }}</span>
-                  <span v-if="m.started || m.finished" class="kg">{{ m.homeGoals }}</span>
-                </div>
-                <div class="koside">
-                  <span class="flag">{{ slot(m.away).flag }}</span>
-                  <span class="kname" :class="{ tbd: !slot(m.away).real }">{{ slot(m.away).name }}</span>
-                  <span v-if="m.started || m.finished" class="kg">{{ m.awayGoals }}</span>
-                </div>
-                <div class="kometa">
-                  {{ m.finished ? t.final : (m.status === 'in' ? t.live : (m.kickoff ? fmtDayTime(m.kickoff) : '')) }}
-                  <span v-if="m.homePens != null"> · {{ m.homePens }}-{{ m.awayPens }} pen</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <BracketBoard :data="bracket" :stages="t.stages" :labels="{ final: t.final, live: t.live }" />
         </section>
 
         <p class="src">{{ t.source }}</p>
