@@ -12,8 +12,8 @@ const conns = (nums) => connectorsFor(nums.length)
       <span class="col-title">{{ stages[col.key] }}</span>
       <div class="col-matches">
         <div v-for="num in col.nums" :key="num" class="mbox">
-          <div class="mside" :class="{ tbd: !bx(num).home.real }"><span class="flag">{{ bx(num).home.flag }}</span><span class="nm">{{ bx(num).home.real ? bx(num).home.code : bx(num).home.name }}</span><span v-if="bx(num).hg != null" class="g">{{ bx(num).hg }}</span></div>
-          <div class="mside" :class="{ tbd: !bx(num).away.real }"><span class="flag">{{ bx(num).away.flag }}</span><span class="nm">{{ bx(num).away.real ? bx(num).away.code : bx(num).away.name }}</span><span v-if="bx(num).ag != null" class="g">{{ bx(num).ag }}</span></div>
+          <div class="mside" :class="{ tbd: !bx(num).home.real, prov: bx(num).home.prov }"><span class="flag">{{ bx(num).home.flag }}</span><span class="nm">{{ bx(num).home.real ? bx(num).home.code : bx(num).home.name }}</span><span v-if="bx(num).hg != null" class="g">{{ bx(num).hg }}</span></div>
+          <div class="mside" :class="{ tbd: !bx(num).away.real, prov: bx(num).away.prov }"><span class="flag">{{ bx(num).away.flag }}</span><span class="nm">{{ bx(num).away.real ? bx(num).away.code : bx(num).away.name }}</span><span v-if="bx(num).ag != null" class="g">{{ bx(num).ag }}</span></div>
         </div>
         <div class="connectors right" aria-hidden="true">
           <div v-for="(c, k) in conns(col.nums)" :key="k" class="conn" :class="{ single: c.single }" :style="{ top: c.topPct + '%', bottom: (100 - c.botPct) + '%' }">
@@ -52,8 +52,8 @@ const conns = (nums) => connectorsFor(nums.length)
           </div>
         </div>
         <div v-for="num in col.nums" :key="num" class="mbox">
-          <div class="mside" :class="{ tbd: !bx(num).home.real }"><span class="flag">{{ bx(num).home.flag }}</span><span class="nm">{{ bx(num).home.real ? bx(num).home.code : bx(num).home.name }}</span><span v-if="bx(num).hg != null" class="g">{{ bx(num).hg }}</span></div>
-          <div class="mside" :class="{ tbd: !bx(num).away.real }"><span class="flag">{{ bx(num).away.flag }}</span><span class="nm">{{ bx(num).away.real ? bx(num).away.code : bx(num).away.name }}</span><span v-if="bx(num).ag != null" class="g">{{ bx(num).ag }}</span></div>
+          <div class="mside" :class="{ tbd: !bx(num).home.real, prov: bx(num).home.prov }"><span class="flag">{{ bx(num).home.flag }}</span><span class="nm">{{ bx(num).home.real ? bx(num).home.code : bx(num).home.name }}</span><span v-if="bx(num).hg != null" class="g">{{ bx(num).hg }}</span></div>
+          <div class="mside" :class="{ tbd: !bx(num).away.real, prov: bx(num).away.prov }"><span class="flag">{{ bx(num).away.flag }}</span><span class="nm">{{ bx(num).away.real ? bx(num).away.code : bx(num).away.name }}</span><span v-if="bx(num).ag != null" class="g">{{ bx(num).ag }}</span></div>
         </div>
       </div>
     </div>
@@ -72,6 +72,8 @@ const conns = (nums) => connectorsFor(nums.length)
 .mside .flag { font-size: 1rem; line-height: 1; }
 .mside .nm { flex: 1; font-size: .66rem; font-weight: 700; letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mside.tbd .nm { font-weight: 600; font-style: italic; color: var(--faint); }
+.mside.prov { opacity: .68; }
+.mside.prov .nm { font-weight: 600; }
 .mside .g { font-size: .72rem; font-weight: 800; color: var(--accent2); min-width: .8rem; text-align: right; }
 .mbox.big { border-color: var(--gold, #c98a00); box-shadow: 0 0 16px rgba(201,138,0,.16); }
 .mbox.big .mside { min-height: 40px; }

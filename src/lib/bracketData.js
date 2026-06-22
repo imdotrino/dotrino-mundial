@@ -22,11 +22,23 @@ function sideOf (code, label) {
 export function resolveBracket (matches) {
   // grupos: decidido (todos jugados) + 1º/2º
   const groups = GROUP_LETTERS.map((L) => computeGroup(L, matches))
-  const realSlot = (slot) => {
+  // Posición ACTUAL del cupo (provisional con resultados parciales). decided=true
+  // cuando el grupo ya está cerrado; null si el grupo aún no jugó.
+  const provInfo = (slot) => {
     if (slot.kind === '3rd') return null
     const g = groups[slot.group]
-    if (g.remaining !== 0) return null
-    return slot.kind === 'W' ? g.table[0].team.code : g.table[1].team.code
+    if (g.played === 0) return null
+    const row = slot.kind === 'W' ? g.table[0] : g.table[1]
+    return { code: row.team.code, decided: g.remaining === 0 }
+  }
+  const chooseSide = (feedCode, prov, label) => {
+    const ft = feedCode && TEAM_BY_CODE[feedCode]
+    if (ft) return { code: ft.code, flag: ft.flag, name: ft.name, real: true, prov: false }
+    if (prov && prov.code && TEAM_BY_CODE[prov.code]) {
+      const t = TEAM_BY_CODE[prov.code]
+      return { code: t.code, flag: t.flag, name: t.name, real: true, prov: !prov.decided }
+    }
+    return sideOf(feedCode, label)
   }
   const phSlot = (slot) => slot.kind === 'W' ? '1' + GROUP_LETTERS[slot.group]
     : slot.kind === 'RU' ? '2' + GROUP_LETTERS[slot.group] : '3RD'
@@ -38,14 +50,13 @@ export function resolveBracket (matches) {
   for (const m of matches.filter((x) => x.stage)) (byStage[norm(m.stage)] ||= []).push(m)
 
   const boxes = {}
-  const finishedScore = (m) => m.finished && m.homeGoals != null && m.awayGoals != null
 
   // ---- Dieciseisavos ----
   for (const def of R32) {
     const isT = (s) => s.kind === '3rd'
-    const hReal = realSlot(def.home), aReal = realSlot(def.away)
-    const hKeys = [hReal, phSlot(def.home)].filter(Boolean)
-    const aKeys = [aReal, phSlot(def.away)].filter(Boolean)
+    const hProv = provInfo(def.home), aProv = provInfo(def.away)
+    const hKeys = [hProv && hProv.code, phSlot(def.home)].filter(Boolean)
+    const aKeys = [aProv && aProv.code, phSlot(def.away)].filter(Boolean)
     const pool = byStage['round-of-32'] || []
     let fm = null
     for (const m of pool) {
@@ -56,7 +67,7 @@ export function resolveBracket (matches) {
         if (hKeys.some((k) => set.has(k)) && aKeys.some((k) => set.has(k))) { fm = m; break }
       }
     }
-    boxes[def.num] = buildBox(def, fm, hKeys, aKeys, labelSlot(def.home), labelSlot(def.away))
+    boxes[def.num] = buildBox(def, fm, hKeys, aKeys, labelSlot(def.home), labelSlot(def.away), hProv, aProv)
   }
 
   // ---- Rondas posteriores (en orden) ----
@@ -86,7 +97,7 @@ export function resolveBracket (matches) {
         const set = new Set([hc, ac])
         fm = pool.find((m) => set.has(m.home) && set.has(m.away)) || null
       }
-      boxes[def.num] = buildBox(def, fm, [hc].filter(Boolean), [ac].filter(Boolean), hLabel, aLabel)
+      boxes[def.num] = buildBox(def, fm, [hc].filter(Boolean), [ac].filter(Boolean), hLabel, aLabel, null, null)
     }
   }
   laterRound(R16, 'round-of-16', winner)
@@ -95,20 +106,23 @@ export function resolveBracket (matches) {
   laterRound([FINAL], 'final', winner)
   laterRound([THIRD_PLACE], 'third-place', loser)
 
-  function buildBox (def, fm, hKeys, aKeys, hLabel, aLabel) {
-    if (!fm) {
-      return { home: sideOf(null, hLabel), away: sideOf(null, aLabel), hg: null, ag: null, hp: null, ap: null, status: 'scheduled', finished: false, kickoff: null, _hc: null, _ac: null }
+  function buildBox (def, fm, hKeys, aKeys, hLabel, aLabel, provHome, provAway) {
+    let hc = null, ac = null, hg = null, ag = null, hp = null, ap = null
+    let status = 'scheduled', finished = false, kickoff = null
+    if (fm) {
+      hc = fm.home; ac = fm.away; hg = fm.homeGoals; ag = fm.awayGoals; hp = fm.homePens; ap = fm.awayPens
+      const homeMatchesAway = hKeys.length && hKeys.includes(fm.away)
+      const awayMatchesHome = aKeys.length && aKeys.includes(fm.home)
+      if (homeMatchesAway || awayMatchesHome) { hc = fm.away; ac = fm.home; hg = fm.awayGoals; ag = fm.homeGoals; hp = fm.awayPens; ap = fm.homePens }
+      if (!(fm.started || fm.finished)) { hg = null; ag = null }
+      status = fm.status; finished = !!fm.finished; kickoff = fm.kickoff || null
     }
-    // alinear lados del feed a home/away de la caja
-    let hc = fm.home, ac = fm.away, hg = fm.homeGoals, ag = fm.awayGoals, hp = fm.homePens, ap = fm.awayPens
-    const homeMatchesAway = hKeys.length && hKeys.includes(fm.away)
-    const awayMatchesHome = aKeys.length && aKeys.includes(fm.home)
-    if (homeMatchesAway || awayMatchesHome) { hc = fm.away; ac = fm.home; hg = fm.awayGoals; ag = fm.homeGoals; hp = fm.awayPens; ap = fm.homePens }
+    // código real (confirmado) para propagar ganadores; el provisional NO avanza.
+    const realCode = (c) => (c && TEAM_BY_CODE[c]) ? c : null
     return {
-      home: sideOf(hc, hLabel), away: sideOf(ac, aLabel),
-      hg: (fm.started || fm.finished) ? hg : null, ag: (fm.started || fm.finished) ? ag : null,
-      hp, ap, status: fm.status, finished: !!fm.finished, kickoff: fm.kickoff || null,
-      _hc: hc, _ac: ac,
+      home: chooseSide(hc, provHome, hLabel), away: chooseSide(ac, provAway, aLabel),
+      hg, ag, hp, ap, status, finished, kickoff,
+      _hc: realCode(hc), _ac: realCode(ac),
     }
   }
 
