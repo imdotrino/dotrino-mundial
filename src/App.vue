@@ -10,7 +10,8 @@ import BracketBoard from './components/BracketBoard.vue'
 const I18N = {
   es: {
     tagline: 'Resultados oficiales del Mundial 2026, en vivo. Quién juega hoy, cómo va cada grupo y qué necesita cada equipo para clasificar.',
-    tabs: { hoy: 'Hoy', resultados: 'Resultados', grupos: 'Grupos', terceros: 'Mejores terceros', llaves: 'Llaves' },
+    tabs: { hoy: 'Hoy', resultados: 'Resultados', grupos: 'Grupos', llaves: 'Llaves' },
+    thirdsTitle: 'Mejores terceros',
     resultsTitle: 'Partidos jugados', noPlayed: 'Aún no se ha jugado ningún partido.',
     bracketTitle: 'Eliminatorias', bracketNote: 'Se va llenando con los resultados: los cruces aún sin definir muestran el clasificado pendiente (p. ej. «2º A», «3º»).',
     stages: { 'round-of-32': 'Dieciseisavos', 'round-of-16': 'Octavos', quarterfinal: 'Cuartos de final', semifinal: 'Semifinales', 'third-place': 'Tercer puesto', final: 'Final' },
@@ -27,7 +28,8 @@ const I18N = {
   },
   en: {
     tagline: 'Official 2026 World Cup results, live. Who plays today, how each group stands and what each team needs to advance.',
-    tabs: { hoy: 'Today', resultados: 'Results', grupos: 'Groups', terceros: 'Best thirds', llaves: 'Bracket' },
+    tabs: { hoy: 'Today', resultados: 'Results', grupos: 'Groups', llaves: 'Bracket' },
+    thirdsTitle: 'Best thirds',
     resultsTitle: 'Played matches', noPlayed: 'No matches played yet.',
     bracketTitle: 'Knockout stage', bracketNote: 'Fills in with results: undecided ties show the pending qualifier (e.g. “2nd A”, “3rd”).',
     stages: { 'round-of-32': 'Round of 32', 'round-of-16': 'Round of 16', quarterfinal: 'Quarterfinals', semifinal: 'Semifinals', 'third-place': 'Third place', final: 'Final' },
@@ -203,10 +205,9 @@ function noteFor (code, letter) {
               </ul>
             </div>
           </div>
-        </section>
 
-        <!-- TERCEROS -->
-        <section v-if="tab === 'terceros'" class="panel">
+          <!-- Mejores terceros: al fondo de la pestaña Grupos -->
+          <h2 class="ph thirds-h">{{ t.thirdsTitle }}</h2>
           <p class="legend">{{ t.thirdsIntro }}</p>
           <table class="gtable thirds">
             <thead><tr><th>{{ t.th.pos }}</th><th class="l">{{ t.th.team }}</th><th>{{ t.group }}</th><th>{{ t.th.pj }}</th><th>{{ t.th.dg }}</th><th>{{ t.th.pts }}</th><th></th></tr></thead>

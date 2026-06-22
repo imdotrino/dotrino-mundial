@@ -80,6 +80,7 @@ dotrino-install{--cc-install-accent:#00658c;--cc-install-modal-bg:#fff;--cc-inst
 li.tercero .otag{background:var(--amber-bg);color:var(--amber)}
 li.disputa .otag{background:var(--blue-bg);color:var(--blue)}
 
+.thirds-h{margin-top:2rem}
 .thirds{max-width:620px;margin:0 auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:.6rem 1rem 1rem}
 .pens{font-size:.66rem;color:var(--dim);font-weight:700}
 
