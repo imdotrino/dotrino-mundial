@@ -1,14 +1,17 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { fetchOfficialFeed } from './lib/feed.js'
-import { computeAll, matchesOnDate, todayStr, normalizeIso } from './lib/standings.js'
+import { computeAll, matchesOnDate, todayStr, normalizeIso, playedByDate, knockoutByStage, slotLabel } from './lib/standings.js'
 import { TEAM_BY_CODE } from './lib/teams.js'
 
 /* ---------------- i18n ---------------- */
 const I18N = {
   es: {
     tagline: 'Resultados oficiales del Mundial 2026, en vivo. Quién juega hoy, cómo va cada grupo y qué necesita cada equipo para clasificar.',
-    tabs: { hoy: 'Hoy', grupos: 'Grupos', terceros: 'Mejores terceros' },
+    tabs: { hoy: 'Hoy', resultados: 'Resultados', grupos: 'Grupos', terceros: 'Mejores terceros', llaves: 'Llaves' },
+    resultsTitle: 'Partidos jugados', noPlayed: 'Aún no se ha jugado ningún partido.',
+    bracketTitle: 'Eliminatorias', bracketNote: 'Se va llenando con los resultados: los cruces aún sin definir muestran el clasificado pendiente (p. ej. «2º A», «3º»).',
+    stages: { 'round-of-32': 'Dieciseisavos', 'round-of-16': 'Octavos', quarterfinal: 'Cuartos de final', semifinal: 'Semifinales', 'third-place': 'Tercer puesto', final: 'Final' },
     today: 'Partidos de hoy', noToday: 'No hay partidos hoy. Próximos:',
     live: 'EN VIVO', final: 'Final', vs: 'vs',
     th: { pos: '#', team: 'Equipo', pj: 'PJ', g: 'G', e: 'E', p: 'P', gf: 'GF', gc: 'GC', dg: 'DG', pts: 'Pts' },
@@ -22,7 +25,10 @@ const I18N = {
   },
   en: {
     tagline: 'Official 2026 World Cup results, live. Who plays today, how each group stands and what each team needs to advance.',
-    tabs: { hoy: 'Today', grupos: 'Groups', terceros: 'Best thirds' },
+    tabs: { hoy: 'Today', resultados: 'Results', grupos: 'Groups', terceros: 'Best thirds', llaves: 'Bracket' },
+    resultsTitle: 'Played matches', noPlayed: 'No matches played yet.',
+    bracketTitle: 'Knockout stage', bracketNote: 'Fills in with results: undecided ties show the pending qualifier (e.g. “2nd A”, “3rd”).',
+    stages: { 'round-of-32': 'Round of 32', 'round-of-16': 'Round of 16', quarterfinal: 'Quarterfinals', semifinal: 'Semifinals', 'third-place': 'Third place', final: 'Final' },
     today: "Today's matches", noToday: 'No matches today. Coming up:',
     live: 'LIVE', final: 'Final', vs: 'vs',
     th: { pos: '#', team: 'Team', pj: 'P', g: 'W', e: 'D', p: 'L', gf: 'GF', gc: 'GA', dg: 'GD', pts: 'Pts' },
@@ -56,6 +62,9 @@ onUnmounted(() => clearInterval(timer))
 
 const matches = computed(() => (feed.value && feed.value.matches) || [])
 const all = computed(() => computeAll(matches.value))
+const played = computed(() => playedByDate(matches.value))
+const knockout = computed(() => knockoutByStage(matches.value))
+const slot = (code) => slotLabel(code)
 const updatedAt = computed(() => feed.value && feed.value.updatedAt ? new Date(feed.value.updatedAt).toLocaleString(lang.value) : '')
 
 // Hoy (o, si no hay, el próximo día con partidos).
@@ -75,6 +84,7 @@ function localDateOf (iso) { const d = new Date(normalizeIso(iso)); return `${d.
 const tm = (code) => TEAM_BY_CODE[code] || { code, name: code, flag: '🏳️' }
 const gd = (r) => r.gf - r.gc
 function fmtTime (iso) { return new Date(normalizeIso(iso)).toLocaleTimeString(lang.value, { hour: '2-digit', minute: '2-digit' }) }
+function fmtDayTime (iso) { return new Date(normalizeIso(iso)).toLocaleString(lang.value, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }
 function fmtDate (s) { if (!s) return ''; const [y, m, d] = s.split('-'); return new Date(+y, +m - 1, +d).toLocaleDateString(lang.value, { weekday: 'long', day: 'numeric', month: 'long' }) }
 function statusOf (code, letter) {
   const g = all.value.groups.find((x) => x.letter === letter)
@@ -145,6 +155,26 @@ function noteFor (code, letter) {
           </div>
         </section>
 
+        <!-- RESULTADOS -->
+        <section v-if="tab === 'resultados'" class="panel">
+          <h2 class="ph">{{ t.resultsTitle }}</h2>
+          <div v-if="!played.length" class="msg">{{ t.noPlayed }}</div>
+          <div v-for="day in played" :key="day.date" class="dayblock">
+            <h3 class="dayhead">{{ fmtDate(day.date) }}</h3>
+            <div class="matches">
+              <div v-for="(m, i) in day.list" :key="i" class="match">
+                <div class="side"><span class="flag">{{ tm(m.home).flag }}</span><span class="tname">{{ tm(m.home).name }}</span></div>
+                <div class="mid">
+                  <span class="score">{{ m.homeGoals }}<i>-</i>{{ m.awayGoals }}</span>
+                  <span v-if="m.homePens != null" class="pens">{{ m.homePens }}-{{ m.awayPens }} pen</span>
+                  <span class="mstatus fin">{{ t.final }}</span>
+                </div>
+                <div class="side right"><span class="tname">{{ tm(m.away).name }}</span><span class="flag">{{ tm(m.away).flag }}</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <!-- GRUPOS -->
         <section v-if="tab === 'grupos'" class="panel">
           <p class="legend">{{ t.legend }}</p>
@@ -189,6 +219,32 @@ function noteFor (code, letter) {
               </tr>
             </tbody>
           </table>
+        </section>
+
+        <!-- LLAVES -->
+        <section v-if="tab === 'llaves'" class="panel">
+          <p class="legend">{{ t.bracketNote }}</p>
+          <div v-for="rnd in knockout" :key="rnd.stage" class="koround">
+            <h3 class="kohead">{{ t.stages[rnd.stage] || rnd.stage }}</h3>
+            <div class="komatches">
+              <div v-for="(m, i) in rnd.list" :key="i" class="komatch">
+                <div class="koside">
+                  <span class="flag">{{ slot(m.home).flag }}</span>
+                  <span class="kname" :class="{ tbd: !slot(m.home).real }">{{ slot(m.home).name }}</span>
+                  <span v-if="m.started || m.finished" class="kg">{{ m.homeGoals }}</span>
+                </div>
+                <div class="koside">
+                  <span class="flag">{{ slot(m.away).flag }}</span>
+                  <span class="kname" :class="{ tbd: !slot(m.away).real }">{{ slot(m.away).name }}</span>
+                  <span v-if="m.started || m.finished" class="kg">{{ m.awayGoals }}</span>
+                </div>
+                <div class="kometa">
+                  {{ m.finished ? t.final : (m.status === 'in' ? t.live : (m.kickoff ? fmtDayTime(m.kickoff) : '')) }}
+                  <span v-if="m.homePens != null"> · {{ m.homePens }}-{{ m.awayPens }} pen</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
 
         <p class="src">{{ t.source }}</p>

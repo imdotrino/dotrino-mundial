@@ -117,3 +117,54 @@ export function localDate (iso) {
 // El feed usa "2026-06-11T19:00Z"; aseguramos parse correcto.
 export function normalizeIso (iso) { return /[Z+]/.test(iso) ? iso : iso + 'Z' }
 export const todayStr = () => localDate(new Date().toISOString())
+
+/* ---------------- Resultados (partidos jugados) ---------------- */
+const isPlayed = (m) => m.finished && m.homeGoals != null && m.awayGoals != null
+
+/** Partidos jugados agrupados por fecha (más reciente primero). */
+export function playedByDate (matches) {
+  const played = matches.filter(isPlayed)
+    .sort((a, b) => Date.parse(normalizeIso(b.kickoff || 0)) - Date.parse(normalizeIso(a.kickoff || 0)))
+  const days = []
+  for (const m of played) {
+    const d = m.kickoff ? localDate(m.kickoff) : '—'
+    let day = days.find((x) => x.date === d)
+    if (!day) { day = { date: d, list: [] }; days.push(day) }
+    day.list.push(m)
+  }
+  return days
+}
+
+/* ---------------- Llaves (eliminatorias) ---------------- */
+const STAGE_ORDER = ['round-of-32', 'round-of-16', 'quarterfinal', 'semifinal', 'third-place', 'final']
+const normStage = (s) => String(s || '').toLowerCase().replace(/_/g, '-')
+  .replace('quarter-final', 'quarterfinal').replace('semi-final', 'semifinal')
+  .replace('3rd-place', 'third-place').replace('round-of-16-final', 'round-of-16')
+
+/** Eliminatorias del feed, agrupadas y ordenadas por ronda. */
+export function knockoutByStage (matches) {
+  const ko = matches.filter((m) => m.stage)
+  const map = {}
+  for (const m of ko) {
+    const s = normStage(m.stage)
+    ;(map[s] ||= []).push(m)
+  }
+  const order = [...STAGE_ORDER]
+  Object.keys(map).forEach((s) => { if (!order.includes(s)) order.push(s) })
+  return order.filter((s) => map[s]).map((s) => ({
+    stage: s,
+    list: map[s].sort((a, b) => Date.parse(normalizeIso(a.kickoff || 0)) - Date.parse(normalizeIso(b.kickoff || 0))),
+  }))
+}
+
+/** Etiqueta legible de un código del feed (equipo real o placeholder de llave). */
+export function slotLabel (code) {
+  const t = TEAM_BY_CODE[code]
+  if (t) return { flag: t.flag, name: t.name, real: true }
+  const m = /^([12])([A-L])$/.exec(code || '')
+  if (m) return { flag: '', name: `${m[1]}º ${m[2]}`, real: false }
+  if (/^3/.test(code || '')) return { flag: '', name: '3º', real: false }
+  const w = /^W(\d+)$/i.exec(code || '')
+  if (w) return { flag: '', name: `Ganador ${w[1]}`, real: false }
+  return { flag: '', name: code || '—', real: false }
+}
