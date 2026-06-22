@@ -160,7 +160,7 @@ function noteFor (code, letter) {
           <span v-if="updatedAt">{{ t.updated }}: {{ updatedAt }}</span>
         </div>
 
-        <div class="tabsbar">
+        <div class="tabsbar" :class="{ sticky: tab === 'resultados' || tab === 'grupos' }">
           <nav class="tabs" role="tablist">
             <button v-for="(label, k) in t.tabs" :key="k" role="tab" :aria-selected="tab === k" :class="{ on: tab === k }" @click="tab = k">{{ label }}</button>
           </nav>

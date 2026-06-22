@@ -32,7 +32,8 @@ dotrino-install{--cc-install-accent:#00658c;--cc-install-modal-bg:#fff;--cc-inst
 .badge.ok{background:var(--green-bg);color:var(--green)}
 .src{text-align:center;color:var(--faint);font-size:.78rem;margin-top:1.6rem}
 
-.tabsbar{position:sticky;top:var(--topbar-h,0px);z-index:9;margin:0 -1.1rem 1.4rem;padding:.5rem 1.1rem;background:rgba(244,247,249,.92);backdrop-filter:blur(8px)}
+.tabsbar{margin:0 -1.1rem 1.4rem;padding:.5rem 1.1rem}
+.tabsbar.sticky{position:sticky;top:var(--topbar-h,0px);z-index:9;background:rgba(244,247,249,.92);backdrop-filter:blur(8px)}
 .tabs{display:flex;gap:.35rem;justify-content:center;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:.35rem;max-width:fit-content;margin:0 auto}
 .tabs button{border:0;background:transparent;color:var(--dim);font:inherit;font-weight:700;padding:.5rem 1rem;border-radius:11px;cursor:pointer}
 .tabs button.on{background:var(--accent);color:#fff}
