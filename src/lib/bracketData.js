@@ -4,7 +4,7 @@
 
 import { GROUP_LETTERS, TEAM_BY_CODE } from './teams.js'
 import { computeGroup, normalizeIso } from './standings.js'
-import { R32, R16, QF, SF, FINAL, THIRD_PLACE } from './bracket.js'
+import { R32, R16, QF, SF, FINAL, THIRD_PLACE, THIRD_SLOTS, allocateThirds } from './bracket.js'
 
 const norm = (s) => String(s || '').toLowerCase().replace(/_/g, '-')
   .replace('quarter-final', 'quarterfinal').replace('semi-final', 'semifinal').replace('3rd-place', 'third-place')
@@ -45,6 +45,23 @@ export function resolveBracket (matches) {
   const labelSlot = (slot) => slot.kind === 'W' ? `1º ${GROUP_LETTERS[slot.group]}`
     : slot.kind === 'RU' ? `2º ${GROUP_LETTERS[slot.group]}` : '3º'
 
+  // Mejores 8 terceros (provisional): ranking de los 12 terceros actuales → top 8,
+  // asignados a los 8 cupos de tercero por la regla FIFA. Así el bracket los muestra.
+  const gdr = (r) => r.gf - r.gc
+  const thirdsRanked = groups
+    .map((g, gi) => ({ row: g.table[2], gi }))
+    .filter((x) => x.row && x.row.team)
+    .sort((a, b) => b.row.pts - a.row.pts || gdr(b.row) - gdr(a.row) || b.row.gf - a.row.gf || a.row.team.code.localeCompare(b.row.team.code))
+  const top8 = thirdsRanked.slice(0, 8).map((x) => x.gi)
+  const alloc = allocateThirds(top8)
+  const allDecided = groups.every((g) => g.remaining === 0)
+  const thirdForMatch = {}
+  THIRD_SLOTS.forEach((s, i) => {
+    const gi = alloc[i]
+    const code = gi != null && groups[gi].table[2] && groups[gi].table[2].team.code
+    if (code) thirdForMatch[s.match] = { code, decided: allDecided }
+  })
+
   // feed por etapa
   const byStage = {}
   for (const m of matches.filter((x) => x.stage)) (byStage[norm(m.stage)] ||= []).push(m)
@@ -54,7 +71,8 @@ export function resolveBracket (matches) {
   // ---- Dieciseisavos ----
   for (const def of R32) {
     const isT = (s) => s.kind === '3rd'
-    const hProv = provInfo(def.home), aProv = provInfo(def.away)
+    const hProv = provInfo(def.home)
+    const aProv = def.away.kind === '3rd' ? (thirdForMatch[def.num] || null) : provInfo(def.away)
     const hKeys = [hProv && hProv.code, phSlot(def.home)].filter(Boolean)
     const aKeys = [aProv && aProv.code, phSlot(def.away)].filter(Boolean)
     const pool = byStage['round-of-32'] || []

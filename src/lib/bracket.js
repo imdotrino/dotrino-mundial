@@ -35,6 +35,39 @@ export const SF = [{ num: 101, from: [97, 98] }, { num: 102, from: [99, 100] }]
 export const FINAL = { num: 104, from: [101, 102] }
 export const THIRD_PLACE = { num: 103, from: [101, 102] }
 
+// Slots de "mejor tercero" en dieciseisavos (regla FIFA por posición de bombo).
+// thirdSlot 0..7 ↔ partidos 74,77,79,80,81,82,85,87. allowed = índices de grupo
+// (A=0 … L=11) cuyos terceros pueden caer en ese slot.
+export const THIRD_SLOTS = [
+  { match: 74, allowed: [0, 1, 2, 3, 5] }, //  A B C D F
+  { match: 77, allowed: [2, 3, 5, 6, 7] }, //  C D F G H
+  { match: 79, allowed: [2, 4, 5, 7, 8] }, //  C E F H I
+  { match: 80, allowed: [4, 7, 8, 9, 10] }, // E H I J K
+  { match: 81, allowed: [1, 4, 5, 8, 9] }, //  B E F I J
+  { match: 82, allowed: [0, 4, 7, 8, 9] }, //  A E H I J
+  { match: 85, allowed: [4, 5, 6, 8, 9] }, //  E F G I J
+  { match: 87, allowed: [3, 4, 8, 9, 11] }, // D E I J L
+]
+// Asigna los 8 grupos cuyos terceros clasifican a los 8 slots (backtracking
+// determinista; aproxima el Anexo de la FIFA). Devuelve array[thirdSlot]=idxGrupo.
+export function allocateThirds (qualifiedGroups) {
+  const result = new Array(THIRD_SLOTS.length).fill(null)
+  if (qualifiedGroups.length !== THIRD_SLOTS.length) return result
+  const used = new Set()
+  const solve = (slot) => {
+    if (slot >= THIRD_SLOTS.length) return true
+    for (const g of THIRD_SLOTS[slot].allowed) {
+      if (used.has(g) || !qualifiedGroups.includes(g)) continue
+      used.add(g); result[slot] = g
+      if (solve(slot + 1)) return true
+      used.delete(g); result[slot] = null
+    }
+    return false
+  }
+  solve(0)
+  return result
+}
+
 // Mapa num → definición (slots o feeders).
 export const BY_NUM = {}
 R32.forEach((m) => { BY_NUM[m.num] = m })
