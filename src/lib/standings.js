@@ -124,7 +124,7 @@ const isPlayed = (m) => m.finished && m.homeGoals != null && m.awayGoals != null
 /** Partidos jugados agrupados por fecha (más reciente primero). */
 export function playedByDate (matches) {
   const played = matches.filter(isPlayed)
-    .sort((a, b) => Date.parse(normalizeIso(b.kickoff || 0)) - Date.parse(normalizeIso(a.kickoff || 0)))
+    .sort((a, b) => Date.parse(normalizeIso(a.kickoff || 0)) - Date.parse(normalizeIso(b.kickoff || 0)))
   const days = []
   for (const m of played) {
     const d = m.kickoff ? localDate(m.kickoff) : '—'
