@@ -13,6 +13,8 @@ const isGroupMatch = (m) => {
   return h && a && h.group === a.group
 }
 const isFinished = (m) => m.finished && m.homeGoals != null && m.awayGoals != null
+// En juego ahora: con marcador en vivo, sin terminar.
+const isLive = (m) => !m.finished && (m.status === 'in' || m.started) && m.homeGoals != null && m.awayGoals != null
 
 function blankRow (team) {
   return { team, pj: 0, w: 0, d: 0, l: 0, gf: 0, gc: 0, pts: 0 }
@@ -43,16 +45,30 @@ function groupMatches (letter, matches) {
 export function computeGroup (letter, matches) {
   const teams = GROUPS[GROUP_LETTERS.indexOf(letter)].teams
   const ms = groupMatches(letter, matches)
-  const rows = {}
-  teams.forEach((t) => { rows[t.code] = blankRow(t) })
-  const remaining = []
+  const rows = {}        // SOLO terminados → base exacta para clasificación
+  const liveRows = {}    // terminados + en vivo → tabla que se muestra (provisional)
+  teams.forEach((t) => { rows[t.code] = blankRow(t); liveRows[t.code] = blankRow(t) })
+  const remaining = []   // no decididos (pendientes + en vivo) → fuerza bruta
+  const live = []        // partidos en juego ahora (para mostrar)
+  const liveCodes = new Set()
   for (const m of ms) {
-    if (isFinished(m)) apply(rows, m.home, m.away, m.homeGoals, m.awayGoals)
-    else remaining.push([m.home, m.away])
+    if (isFinished(m)) {
+      apply(rows, m.home, m.away, m.homeGoals, m.awayGoals)
+      apply(liveRows, m.home, m.away, m.homeGoals, m.awayGoals)
+    } else if (isLive(m)) {
+      apply(liveRows, m.home, m.away, m.homeGoals, m.awayGoals) // refleja el vivo en la tabla
+      remaining.push([m.home, m.away])                          // pero sigue indeciso para clasificar
+      live.push({ home: m.home, away: m.away, homeGoals: m.homeGoals, awayGoals: m.awayGoals })
+      liveCodes.add(m.home); liveCodes.add(m.away)
+    } else {
+      remaining.push([m.home, m.away])
+    }
   }
-  const table = sortRows(Object.values(rows))
+  const table = sortRows(Object.values(liveRows))
+  table.forEach((r) => { r.live = liveCodes.has(r.team.code) })
   const status = teamStatus(teams, rows, remaining)
-  return { letter, table, remaining: remaining.length, played: ms.length - remaining.length, total: ms.length, status }
+  const finished = ms.filter(isFinished).length
+  return { letter, table, remaining: remaining.length, played: finished, total: ms.length, live, status }
 }
 
 // Fuerza bruta: posiciones finales posibles de cada equipo según resultados que faltan.

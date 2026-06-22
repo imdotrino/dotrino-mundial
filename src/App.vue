@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { fetchOfficialFeed } from './lib/feed.js'
 import { computeAll, matchesOnDate, todayStr, normalizeIso, playedByDate } from './lib/standings.js'
 import { resolveBracket } from './lib/bracketData.js'
@@ -63,6 +63,15 @@ async function load () {
 }
 onMounted(() => { load(); timer = setInterval(load, 120000); document.documentElement.lang = lang.value })
 onUnmounted(() => clearInterval(timer))
+
+// Al abrir la pestaña Grupos, si hay un partido en vivo, lleva a ese grupo.
+function scrollToLiveGroup () {
+  nextTick(() => {
+    const el = document.querySelector('.gcard.has-live')
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  })
+}
+watch(tab, (v) => { if (v === 'grupos') scrollToLiveGroup() })
 
 const matches = computed(() => (feed.value && feed.value.matches) || [])
 const all = computed(() => computeAll(matches.value))
@@ -182,19 +191,25 @@ function noteFor (code, letter) {
         <section v-if="tab === 'grupos'" class="panel">
           <p class="legend">{{ t.legend }}</p>
           <div class="groups">
-            <div v-for="g in all.groups" :key="g.letter" class="gcard">
+            <div v-for="g in all.groups" :key="g.letter" class="gcard" :class="{ 'has-live': g.live && g.live.length }">
               <h3>{{ t.group }} {{ g.letter }}</h3>
               <table class="gtable">
                 <thead><tr><th>{{ t.th.pos }}</th><th class="l">{{ t.th.team }}</th><th>{{ t.th.pj }}</th><th>{{ t.th.g }}</th><th>{{ t.th.e }}</th><th>{{ t.th.p }}</th><th>{{ t.th.dg }}</th><th>{{ t.th.pts }}</th></tr></thead>
                 <tbody>
-                  <tr v-for="(r, i) in g.table" :key="r.team.code" :class="{ q1: i < 2, q3: i === 2 }">
+                  <tr v-for="(r, i) in g.table" :key="r.team.code" :class="{ q1: i < 2, q3: i === 2, playing: r.live }">
                     <td>{{ i + 1 }}</td>
-                    <td class="l"><span class="flag">{{ r.team.flag }}</span> {{ r.team.name }}</td>
+                    <td class="l"><span class="flag">{{ r.team.flag }}</span> {{ r.team.name }}<span v-if="r.live" class="livedot" :title="t.live"></span></td>
                     <td>{{ r.pj }}</td><td>{{ r.w }}</td><td>{{ r.d }}</td><td>{{ r.l }}</td>
                     <td>{{ gd(r) > 0 ? '+' + gd(r) : gd(r) }}</td><td class="pts">{{ r.pts }}</td>
                   </tr>
                 </tbody>
               </table>
+              <div v-for="(lm, k) in g.live" :key="'lv' + k" class="livematch">
+                <span class="livedot"></span><span class="lvtag">{{ t.live }}</span>
+                <span class="flag">{{ tm(lm.home).flag }}</span><b>{{ lm.homeGoals }}</b>
+                <span class="lvdash">-</span>
+                <b>{{ lm.awayGoals }}</b><span class="flag">{{ tm(lm.away).flag }}</span>
+              </div>
               <ul class="outlook">
                 <li v-for="r in g.table" :key="r.team.code" :class="stKey(statusOf(r.team.code, g.letter))">
                   <span class="flag">{{ r.team.flag }}</span>

@@ -27,7 +27,7 @@ export function resolveBracket (matches) {
   const provInfo = (slot) => {
     if (slot.kind === '3rd') return null
     const g = groups[slot.group]
-    if (g.played === 0) return null
+    if (g.played === 0 && !(g.live && g.live.length)) return null // sin nada jugado aún
     const row = slot.kind === 'W' ? g.table[0] : g.table[1]
     return { code: row.team.code, decided: g.remaining === 0 }
   }
