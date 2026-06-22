@@ -61,24 +61,24 @@ const conns = (nums) => connectorsFor(nums.length)
 </template>
 
 <style scoped>
-.board { display: flex; align-items: stretch; gap: 2px; width: 100%; max-width: 100%; overflow: hidden; min-height: 460px; }
+.board { display: flex; align-items: stretch; gap: 2px; width: 100%; max-width: 100%; overflow: hidden; min-height: 520px; }
 .col { display: flex; flex-direction: column; flex: 1 1 0; min-width: 0; }
 .col-title { text-align: center; color: var(--accent); font-size: .56rem; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; margin-bottom: .3rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .col-matches { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: .25rem; position: relative; }
 
 .mbox { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
-.mside { display: flex; align-items: center; gap: 3px; min-height: 26px; padding: .2rem .25rem; border-top: 1px solid var(--line); }
+.mside { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-height: 40px; padding: .25rem .12rem; border-top: 1px solid var(--line); text-align: center; }
 .mside:first-child { border-top: none; }
-.mside .flag { font-size: 1rem; line-height: 1; }
-.mside .nm { flex: 1; font-size: .66rem; font-weight: 700; letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mside .flag { font-size: 1.05rem; line-height: 1; }
+.mside .nm { font-size: .6rem; font-weight: 800; letter-spacing: .02em; line-height: 1.05; white-space: normal; overflow-wrap: anywhere; max-width: 100%; }
 .mside.tbd .nm { font-weight: 600; font-style: italic; color: var(--faint); }
 .mside.prov { opacity: .68; }
 .mside.prov .nm { font-weight: 600; }
-.mside .g { font-size: .72rem; font-weight: 800; color: var(--accent2); min-width: .8rem; text-align: right; }
+.mside .g { position: absolute; top: 1px; right: 2px; font-size: .62rem; font-weight: 800; color: var(--accent2); }
 .mbox.big { border-color: var(--gold, #c98a00); box-shadow: 0 0 16px rgba(201,138,0,.16); }
-.mbox.big .mside { min-height: 40px; }
-.mbox.big .flag { font-size: 1.4rem; }
-.mbox.big .nm { font-size: .82rem; }
+.mbox.big .mside { min-height: 54px; }
+.mbox.big .flag { font-size: 1.5rem; }
+.mbox.big .nm { font-size: .8rem; }
 
 /* conectores (idéntico a pronostico) */
 .connectors { position: absolute; top: 0; bottom: 0; width: 0; pointer-events: none; z-index: 1; }
@@ -109,7 +109,7 @@ const conns = (nums) => connectorsFor(nums.length)
 .bronze { color: #b87333; font-weight: 800; font-size: .74rem; text-align: center; margin-top: .2rem; }
 
 @media (min-width: 760px) {
-  .board { gap: .5rem; min-height: 560px; }
+  .board { gap: .5rem; min-height: 640px; }
   .col-title { font-size: .7rem; }
   .mside .nm { font-size: .8rem; } .mside .flag { font-size: 1.2rem; }
   .center { flex: 1.7 1 0; } .trophy { font-size: 2.6rem; }
