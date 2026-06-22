@@ -32,7 +32,8 @@ dotrino-install{--cc-install-accent:#00658c;--cc-install-modal-bg:#fff;--cc-inst
 .badge.ok{background:var(--green-bg);color:var(--green)}
 .src{text-align:center;color:var(--faint);font-size:.78rem;margin-top:1.6rem}
 
-.tabs{display:flex;gap:.35rem;justify-content:center;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:.35rem;max-width:fit-content;margin:0 auto 1.4rem}
+.tabsbar{position:sticky;top:var(--topbar-h,0px);z-index:9;margin:0 -1.1rem 1.4rem;padding:.5rem 1.1rem;background:rgba(244,247,249,.92);backdrop-filter:blur(8px)}
+.tabs{display:flex;gap:.35rem;justify-content:center;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:.35rem;max-width:fit-content;margin:0 auto}
 .tabs button{border:0;background:transparent;color:var(--dim);font:inherit;font-weight:700;padding:.5rem 1rem;border-radius:11px;cursor:pointer}
 .tabs button.on{background:var(--accent);color:#fff}
 .legend{text-align:center;color:var(--dim);font-size:.9rem;margin-bottom:1rem;max-width:760px;margin-left:auto;margin-right:auto}
@@ -57,7 +58,7 @@ dotrino-install{--cc-install-accent:#00658c;--cc-install-modal-bg:#fff;--cc-inst
 
 /* groups */
 .groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:1.1rem}
-.gcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1rem 1.1rem;box-shadow:0 10px 28px rgba(74,85,96,.05)}
+.gcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1rem 1.1rem;box-shadow:0 10px 28px rgba(74,85,96,.05);scroll-margin-top:calc(var(--topbar-h,56px) + 3.5rem)}
 .gcard h3{font-size:1.05rem;font-weight:800;color:var(--accent2);margin-bottom:.6rem}
 .gtable{width:100%;border-collapse:collapse;font-size:.86rem}
 .gtable th{font-size:.68rem;color:var(--faint);font-weight:700;text-transform:uppercase;padding:.2rem .25rem;text-align:center}

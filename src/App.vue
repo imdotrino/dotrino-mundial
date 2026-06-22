@@ -61,8 +61,21 @@ async function load () {
   if (data) { feed.value = data; state.value = 'ok' }
   else if (!feed.value) state.value = 'error'
 }
-onMounted(() => { load(); timer = setInterval(load, 120000); document.documentElement.lang = lang.value })
-onUnmounted(() => clearInterval(timer))
+// Mide la altura del topbar → variable CSS para que la barra de tabs quede sticky
+// justo debajo (el topbar crece de alto en móvil, así que no sirve un valor fijo).
+let ro = null
+function setTopbarH () {
+  const tb = document.querySelector('.topbar')
+  if (tb) document.documentElement.style.setProperty('--topbar-h', tb.offsetHeight + 'px')
+}
+onMounted(() => {
+  load(); timer = setInterval(load, 120000); document.documentElement.lang = lang.value
+  nextTick(setTopbarH)
+  const tb = document.querySelector('.topbar')
+  if (tb && 'ResizeObserver' in window) { ro = new ResizeObserver(setTopbarH); ro.observe(tb) }
+  window.addEventListener('resize', setTopbarH)
+})
+onUnmounted(() => { clearInterval(timer); ro?.disconnect(); window.removeEventListener('resize', setTopbarH) })
 
 // Al abrir la pestaña Grupos, si hay un partido en vivo, lleva a ese grupo.
 function scrollToLiveGroup () {
@@ -147,9 +160,11 @@ function noteFor (code, letter) {
           <span v-if="updatedAt">{{ t.updated }}: {{ updatedAt }}</span>
         </div>
 
-        <nav class="tabs" role="tablist">
-          <button v-for="(label, k) in t.tabs" :key="k" role="tab" :aria-selected="tab === k" :class="{ on: tab === k }" @click="tab = k">{{ label }}</button>
-        </nav>
+        <div class="tabsbar">
+          <nav class="tabs" role="tablist">
+            <button v-for="(label, k) in t.tabs" :key="k" role="tab" :aria-selected="tab === k" :class="{ on: tab === k }" @click="tab = k">{{ label }}</button>
+          </nav>
+        </div>
 
         <!-- HOY -->
         <section v-if="tab === 'hoy'" class="panel">
