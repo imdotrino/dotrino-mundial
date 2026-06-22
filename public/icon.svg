@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="112" fill="#00658c"/>
+  <g transform="translate(256,256)">
+    <circle r="150" fill="#ffffff"/>
+    <g fill="#00658c">
+      <!-- pentágono central -->
+      <path d="M0,-58 L55,-18 L34,47 L-34,47 L-55,-18 Z"/>
+      <!-- pentágonos exteriores (parciales) -->
+      <path d="M0,-150 L34,-126 L0,-90 L-34,-126 Z"/>
+      <path d="M150,-46 L138,-7 L96,-28 L116,-86 Z"/>
+      <path d="M93,138 L52,114 L78,62 L132,82 Z"/>
+      <path d="M-93,138 L-132,82 L-78,62 L-52,114 Z"/>
+      <path d="M-150,-46 L-116,-86 L-96,-28 L-138,-7 Z"/>
+    </g>
+  </g>
+</svg>
