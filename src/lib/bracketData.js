@@ -55,11 +55,22 @@ export function resolveBracket (matches) {
   const top8 = thirdsRanked.slice(0, 8).map((x) => x.gi)
   const alloc = allocateThirds(top8)
   const allDecided = groups.every((g) => g.remaining === 0)
+  // Equipos que el feed YA colocó en una caja real de dieciseisavos. La asignación
+  // de terceros (allocateThirds) es HEURÍSTICA y puede no coincidir con el sorteo
+  // oficial; si lo hacemos provisional sobre un equipo que el feed ya emparejó en
+  // OTRA caja, ese equipo saldría en DOS posiciones a la vez. El feed manda: no
+  // colocamos un tercero provisional cuyo equipo ya está puesto por el feed.
+  const placedByFeed = new Set()
+  for (const m of matches) {
+    if (norm(m.stage) !== 'round-of-32') continue
+    if (TEAM_BY_CODE[m.home]) placedByFeed.add(m.home)
+    if (TEAM_BY_CODE[m.away]) placedByFeed.add(m.away)
+  }
   const thirdForMatch = {}
   THIRD_SLOTS.forEach((s, i) => {
     const gi = alloc[i]
     const code = gi != null && groups[gi].table[2] && groups[gi].table[2].team.code
-    if (code) thirdForMatch[s.match] = { code, decided: allDecided }
+    if (code && !placedByFeed.has(code)) thirdForMatch[s.match] = { code, decided: allDecided }
   })
 
   // feed por etapa
