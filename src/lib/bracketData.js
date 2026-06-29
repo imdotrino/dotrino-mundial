@@ -123,10 +123,21 @@ export function resolveBracket (matches) {
       const aLabel = (stage === 'third-place' ? 'Perd. ' : 'Gana ') + def.from[1]
       let fm = null
       if (hc && ac) {
+        // ambos lados decididos → partido exacto del feed (con marcador).
         const set = new Set([hc, ac])
         fm = pool.find((m) => set.has(m.home) && set.has(m.away)) || null
+      } else if (hc || ac) {
+        // solo un lado decidido: el feed suele traer el cruce con el otro lado
+        // como placeholder (p. ej. "BRA" vs "RD32"). Lo tomamos para mostrar el
+        // ganador conocido y su horario; el lado pendiente queda como etiqueta.
+        const known = hc || ac
+        fm = pool.find((m) => m.home === known || m.away === known) || null
       }
-      boxes[def.num] = buildBox(def, fm, [hc].filter(Boolean), [ac].filter(Boolean), hLabel, aLabel, null, null)
+      // Mostrar el ganador YA conocido de cada alimentador aunque el rival falte
+      // (antes el lado se quedaba en "Gana 76" pese a estar definido el ganador).
+      const hProv = hc ? { code: hc, decided: true } : null
+      const aProv = ac ? { code: ac, decided: true } : null
+      boxes[def.num] = buildBox(def, fm, [hc].filter(Boolean), [ac].filter(Boolean), hLabel, aLabel, hProv, aProv)
     }
   }
   laterRound(R16, 'round-of-16', winner)
