@@ -10,7 +10,7 @@ import BracketBoard from './components/BracketBoard.vue'
 const I18N = {
   es: {
     tagline: 'Resultados oficiales del Mundial 2026, en vivo. Quién juega hoy, cómo va cada grupo y qué necesita cada equipo para clasificar.',
-    tabs: { hoy: 'Hoy', resultados: 'Resultados', grupos: 'Grupos', llaves: 'Llaves' },
+    tabs: { hoy: 'Hoy', resultados: 'Resultados', llaves: 'Llaves' },
     thirdsTitle: 'Mejores terceros',
     resultsTitle: 'Partidos jugados', noPlayed: 'Aún no se ha jugado ningún partido.',
     bracketTitle: 'Eliminatorias', bracketNote: 'Se va llenando con los resultados: los cruces aún sin definir muestran el clasificado pendiente (p. ej. «2º A», «3º»).',
@@ -28,7 +28,7 @@ const I18N = {
   },
   en: {
     tagline: 'Official 2026 World Cup results, live. Who plays today, how each group stands and what each team needs to advance.',
-    tabs: { hoy: 'Today', resultados: 'Results', grupos: 'Groups', llaves: 'Bracket' },
+    tabs: { hoy: 'Today', resultados: 'Results', llaves: 'Bracket' },
     thirdsTitle: 'Best thirds',
     resultsTitle: 'Played matches', noPlayed: 'No matches played yet.',
     bracketTitle: 'Knockout stage', bracketNote: 'Fills in with results: undecided ties show the pending qualifier (e.g. “2nd A”, “3rd”).',
