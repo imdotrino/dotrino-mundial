@@ -12,8 +12,8 @@ const conns = (nums) => connectorsFor(nums.length)
       <span class="col-title">{{ stages[col.key] }}</span>
       <div class="col-matches">
         <div v-for="num in col.nums" :key="num" class="mbox">
-          <div class="mside" :class="{ tbd: !bx(num).home.real, prov: bx(num).home.prov }"><span class="flag">{{ bx(num).home.flag }}</span><span class="nm">{{ bx(num).home.real ? bx(num).home.code : bx(num).home.name }}</span><span v-if="bx(num).hg != null" class="g">{{ bx(num).hg }}</span></div>
-          <div class="mside" :class="{ tbd: !bx(num).away.real, prov: bx(num).away.prov }"><span class="flag">{{ bx(num).away.flag }}</span><span class="nm">{{ bx(num).away.real ? bx(num).away.code : bx(num).away.name }}</span><span v-if="bx(num).ag != null" class="g">{{ bx(num).ag }}</span></div>
+          <div class="mside" :class="{ tbd: !bx(num).home.real, prov: bx(num).home.prov }"><span class="flag">{{ bx(num).home.flag }}</span><span class="nm">{{ bx(num).home.real ? bx(num).home.code : bx(num).home.name }}</span><span v-if="bx(num).hg != null" class="g">{{ bx(num).hg }}</span><span v-if="bx(num).hp != null" class="pk">({{ bx(num).hp }})</span></div>
+          <div class="mside" :class="{ tbd: !bx(num).away.real, prov: bx(num).away.prov }"><span class="flag">{{ bx(num).away.flag }}</span><span class="nm">{{ bx(num).away.real ? bx(num).away.code : bx(num).away.name }}</span><span v-if="bx(num).ag != null" class="g">{{ bx(num).ag }}</span><span v-if="bx(num).ap != null" class="pk">({{ bx(num).ap }})</span></div>
         </div>
         <div class="connectors right" aria-hidden="true">
           <div v-for="(c, k) in conns(col.nums)" :key="k" class="conn" :class="{ single: c.single }" :style="{ top: c.topPct + '%', bottom: (100 - c.botPct) + '%' }">
@@ -27,16 +27,16 @@ const conns = (nums) => connectorsFor(nums.length)
     <div class="col center">
       <span class="trophy" :class="{ won: data.champion }">🏆</span>
       <div class="mbox big">
-        <div class="mside" :class="{ tbd: !bx(FINAL.num).home.real }"><span class="flag">{{ bx(FINAL.num).home.flag }}</span><span class="nm">{{ bx(FINAL.num).home.real ? bx(FINAL.num).home.code : bx(FINAL.num).home.name }}</span><span v-if="bx(FINAL.num).hg != null" class="g">{{ bx(FINAL.num).hg }}</span></div>
-        <div class="mside" :class="{ tbd: !bx(FINAL.num).away.real }"><span class="flag">{{ bx(FINAL.num).away.flag }}</span><span class="nm">{{ bx(FINAL.num).away.real ? bx(FINAL.num).away.code : bx(FINAL.num).away.name }}</span><span v-if="bx(FINAL.num).ag != null" class="g">{{ bx(FINAL.num).ag }}</span></div>
+        <div class="mside" :class="{ tbd: !bx(FINAL.num).home.real }"><span class="flag">{{ bx(FINAL.num).home.flag }}</span><span class="nm">{{ bx(FINAL.num).home.real ? bx(FINAL.num).home.code : bx(FINAL.num).home.name }}</span><span v-if="bx(FINAL.num).hg != null" class="g">{{ bx(FINAL.num).hg }}</span><span v-if="bx(FINAL.num).hp != null" class="pk">({{ bx(FINAL.num).hp }})</span></div>
+        <div class="mside" :class="{ tbd: !bx(FINAL.num).away.real }"><span class="flag">{{ bx(FINAL.num).away.flag }}</span><span class="nm">{{ bx(FINAL.num).away.real ? bx(FINAL.num).away.code : bx(FINAL.num).away.name }}</span><span v-if="bx(FINAL.num).ag != null" class="g">{{ bx(FINAL.num).ag }}</span><span v-if="bx(FINAL.num).ap != null" class="pk">({{ bx(FINAL.num).ap }})</span></div>
       </div>
       <div v-if="data.champion" class="champ">{{ data.champion.flag }} {{ data.champion.name }}</div>
       <div class="third">
         <span class="medal" :class="{ won: data.bronze }">🥉</span>
         <span class="col-title">{{ stages['third-place'] }}</span>
         <div class="mbox">
-          <div class="mside" :class="{ tbd: !bx(THIRD_PLACE.num).home.real }"><span class="flag">{{ bx(THIRD_PLACE.num).home.flag }}</span><span class="nm">{{ bx(THIRD_PLACE.num).home.real ? bx(THIRD_PLACE.num).home.code : bx(THIRD_PLACE.num).home.name }}</span><span v-if="bx(THIRD_PLACE.num).hg != null" class="g">{{ bx(THIRD_PLACE.num).hg }}</span></div>
-          <div class="mside" :class="{ tbd: !bx(THIRD_PLACE.num).away.real }"><span class="flag">{{ bx(THIRD_PLACE.num).away.flag }}</span><span class="nm">{{ bx(THIRD_PLACE.num).away.real ? bx(THIRD_PLACE.num).away.code : bx(THIRD_PLACE.num).away.name }}</span><span v-if="bx(THIRD_PLACE.num).ag != null" class="g">{{ bx(THIRD_PLACE.num).ag }}</span></div>
+          <div class="mside" :class="{ tbd: !bx(THIRD_PLACE.num).home.real }"><span class="flag">{{ bx(THIRD_PLACE.num).home.flag }}</span><span class="nm">{{ bx(THIRD_PLACE.num).home.real ? bx(THIRD_PLACE.num).home.code : bx(THIRD_PLACE.num).home.name }}</span><span v-if="bx(THIRD_PLACE.num).hg != null" class="g">{{ bx(THIRD_PLACE.num).hg }}</span><span v-if="bx(THIRD_PLACE.num).hp != null" class="pk">({{ bx(THIRD_PLACE.num).hp }})</span></div>
+          <div class="mside" :class="{ tbd: !bx(THIRD_PLACE.num).away.real }"><span class="flag">{{ bx(THIRD_PLACE.num).away.flag }}</span><span class="nm">{{ bx(THIRD_PLACE.num).away.real ? bx(THIRD_PLACE.num).away.code : bx(THIRD_PLACE.num).away.name }}</span><span v-if="bx(THIRD_PLACE.num).ag != null" class="g">{{ bx(THIRD_PLACE.num).ag }}</span><span v-if="bx(THIRD_PLACE.num).ap != null" class="pk">({{ bx(THIRD_PLACE.num).ap }})</span></div>
         </div>
         <div v-if="data.bronze" class="bronze">{{ data.bronze.flag }} {{ data.bronze.name }}</div>
       </div>
@@ -52,8 +52,8 @@ const conns = (nums) => connectorsFor(nums.length)
           </div>
         </div>
         <div v-for="num in col.nums" :key="num" class="mbox">
-          <div class="mside" :class="{ tbd: !bx(num).home.real, prov: bx(num).home.prov }"><span class="flag">{{ bx(num).home.flag }}</span><span class="nm">{{ bx(num).home.real ? bx(num).home.code : bx(num).home.name }}</span><span v-if="bx(num).hg != null" class="g">{{ bx(num).hg }}</span></div>
-          <div class="mside" :class="{ tbd: !bx(num).away.real, prov: bx(num).away.prov }"><span class="flag">{{ bx(num).away.flag }}</span><span class="nm">{{ bx(num).away.real ? bx(num).away.code : bx(num).away.name }}</span><span v-if="bx(num).ag != null" class="g">{{ bx(num).ag }}</span></div>
+          <div class="mside" :class="{ tbd: !bx(num).home.real, prov: bx(num).home.prov }"><span class="flag">{{ bx(num).home.flag }}</span><span class="nm">{{ bx(num).home.real ? bx(num).home.code : bx(num).home.name }}</span><span v-if="bx(num).hg != null" class="g">{{ bx(num).hg }}</span><span v-if="bx(num).hp != null" class="pk">({{ bx(num).hp }})</span></div>
+          <div class="mside" :class="{ tbd: !bx(num).away.real, prov: bx(num).away.prov }"><span class="flag">{{ bx(num).away.flag }}</span><span class="nm">{{ bx(num).away.real ? bx(num).away.code : bx(num).away.name }}</span><span v-if="bx(num).ag != null" class="g">{{ bx(num).ag }}</span><span v-if="bx(num).ap != null" class="pk">({{ bx(num).ap }})</span></div>
         </div>
       </div>
     </div>
@@ -75,6 +75,9 @@ const conns = (nums) => connectorsFor(nums.length)
 .mside.prov { opacity: .68; }
 .mside.prov .nm { font-weight: 600; }
 .mside .g { position: absolute; top: 1px; right: 2px; font-size: .62rem; font-weight: 800; color: var(--accent2); }
+/* Penales: número entre paréntesis bajo el gol (p. ej. el ganador por penales). */
+.mside .pk { position: absolute; top: 12px; right: 2px; font-size: .5rem; font-weight: 800; color: var(--gold, #c98a00); line-height: 1; }
+.mbox.big .pk { top: 18px; font-size: .58rem; }
 .mbox.big { border-color: var(--gold, #c98a00); box-shadow: 0 0 16px rgba(201,138,0,.16); }
 .mbox.big .mside { min-height: 54px; }
 .mbox.big .flag { font-size: 1.5rem; }
