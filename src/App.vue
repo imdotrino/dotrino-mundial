@@ -255,7 +255,6 @@ function noteFor (code, letter) {
 
         <!-- LLAVES -->
         <section v-if="tab === 'llaves'" class="panel">
-          <p class="legend">{{ t.bracketNote }}</p>
           <BracketBoard :data="bracket" :stages="t.stages" :labels="{ final: t.final, live: t.live }" />
         </section>
 
