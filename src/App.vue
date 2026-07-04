@@ -175,6 +175,7 @@ function noteFor (code, letter) {
               <div class="mid">
                 <span v-if="m.started || m.finished" class="score">{{ m.homeGoals }}<i>-</i>{{ m.awayGoals }}</span>
                 <span v-else class="time">{{ fmtTime(m.kickoff) }}</span>
+                <span v-if="m.homePens != null" class="pens">{{ m.homePens }}-{{ m.awayPens }} pen</span>
                 <span class="mstatus" :class="m.finished ? 'fin' : (m.status === 'in' ? 'live' : 'sched')">{{ m.finished ? t.final : (m.status === 'in' ? t.live : t.vs) }}</span>
               </div>
               <div class="side right"><span class="tname">{{ tm(m.away).name }}</span><span class="flag">{{ tm(m.away).flag }}</span></div>
