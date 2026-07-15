@@ -53,7 +53,14 @@ const setLang = (l) => { lang.value = l; localStorage.setItem(LANG_KEY, l); docu
 /* ---------------- data ---------------- */
 const feed = ref(null)
 const state = ref('loading') // loading | ok | error
-const tab = ref('hoy')
+// Recuerda el tab SOLO dentro de la sesión de la pestaña (sessionStorage): sobrevive
+// al refresco, pero al cerrar la pestaña vuelve al default. Preferencia efímera de UI.
+const DEFAULT_TAB = 'llaves'
+const TAB_KEY = 'mundial.tab'
+const TAB_KEYS = ['hoy', 'resultados', 'llaves']
+const storedTab = (() => { try { const v = sessionStorage.getItem(TAB_KEY); return TAB_KEYS.includes(v) ? v : DEFAULT_TAB } catch { return DEFAULT_TAB } })()
+const tab = ref(storedTab)
+watch(tab, (v) => { try { sessionStorage.setItem(TAB_KEY, v) } catch { /* modo privado */ } })
 let timer = null
 
 async function load () {
