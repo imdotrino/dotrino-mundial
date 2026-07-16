@@ -13,7 +13,8 @@ const commitMeta = {
 export default defineConfig({
   base: './',
   plugins: [
-    vue(),
+    // Los tags dotrino-* son Web Components del ecosistema, no componentes Vue.
+    vue({ template: { compilerOptions: { isCustomElement: (tag) => tag.startsWith('dotrino-') } } }),
     commitMeta,
     VitePWA({
       registerType: 'autoUpdate',

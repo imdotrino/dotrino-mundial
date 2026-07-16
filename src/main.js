@@ -1,6 +1,8 @@
 import { createApp } from 'vue'
 import { registerSW } from 'virtual:pwa-register'
-import '@dotrino/support'
+// El topbar estándar ya trae la moneda de <dotrino-support> (§5/§6): no se
+// importa aparte ni se re-arma el header a mano.
+import '@dotrino/topbar'
 import '@dotrino/install'
 import App from './App.vue'
 import './style.css'

@@ -1,5 +1,7 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, watchEffect, nextTick } from 'vue'
+import { getIdentity } from './services/identity.js'
+import { getReputation } from './services/reputation.js'
 import { fetchOfficialFeed } from './lib/feed.js'
 import { computeAll, matchesOnDate, todayStr, normalizeIso, playedByDate } from './lib/standings.js'
 import { resolveBracket } from './lib/bracketData.js'
@@ -45,10 +47,49 @@ const I18N = {
     legend: 'Green: top 2 (advance). Amber: 3rd (best-third spot).',
   },
 }
-const LANG_KEY = 'mundial.lang'
-const lang = ref((localStorage.getItem(LANG_KEY) || (navigator.language || 'es').slice(0, 2)) === 'en' ? 'en' : 'es')
+// El idioma es del ecosistema: el topbar es dueño del toggle y lo persiste en
+// 'dotrino.lang'. Migramos UNA vez la preferencia propia ('mundial.lang') para no
+// resetear al usuario que ya había elegido idioma aquí.
+const LANG_KEY = 'dotrino.lang'
+const OLD_LANG_KEY = 'mundial.lang'
+try {
+  const old = localStorage.getItem(OLD_LANG_KEY)
+  if (old) {
+    if (!localStorage.getItem(LANG_KEY)) localStorage.setItem(LANG_KEY, old)
+    localStorage.removeItem(OLD_LANG_KEY)
+  }
+} catch { /* modo privado */ }
+const saved = (() => { try { return localStorage.getItem(LANG_KEY) } catch { return null } })()
+const lang = ref((saved || (navigator.language || 'es').slice(0, 2)) === 'en' ? 'en' : 'es')
 const t = computed(() => I18N[lang.value])
-const setLang = (l) => { lang.value = l; localStorage.setItem(LANG_KEY, l); document.documentElement.lang = l }
+// El topbar ya persiste y fija document.documentElement.lang; aquí solo seguimos su evento.
+const onLang = (e) => { const l = e?.detail?.lang; if (l === 'es' || l === 'en') lang.value = l }
+
+/* ---------------- identidad (§6.1) ---------------- */
+const identityInst = ref(null)
+const reputationInst = ref(null)
+const topbarRef = ref(null)
+
+// Tema del modal de perfil (el topbar es su dueño), acorde al claro de la app.
+const profileTheme = {
+  '--ccp-bg': '#ffffff', '--ccp-bg-2': '#f4f7f9', '--ccp-bg-3': '#eaeff3', '--ccp-bg-4': '#e3e9ed',
+  '--ccp-border': '#cfd8de', '--ccp-text': '#181c1e', '--ccp-muted': '#4a5560',
+  '--ccp-accent': '#00658c', '--ccp-accent-2': '#00506f', '--ccp-accent-text': '#ffffff',
+  '--ccp-gold': '#b3791a', '--ccp-derived': '#b07f00',
+  '--ccp-online': '#1a7a3a', '--ccp-affinity': '#2f6fa6', '--ccp-input-bg': '#f1f4f6', '--ccp-radius': '16px',
+  '--ccp-font': "'Quicksand', system-ui, -apple-system, 'Segoe UI', sans-serif",
+  '--ccp-font-headline': "'Quicksand', system-ui, -apple-system, 'Segoe UI', sans-serif",
+  '--ccp-font-mono': 'ui-monospace, monospace',
+}
+
+// Pasa identity/reputation/tema al topbar (propiedades JS del Web Component).
+watchEffect(() => {
+  const tb = topbarRef.value
+  if (!tb) return
+  tb.identity = identityInst.value ?? null
+  tb.reputation = reputationInst.value ?? null
+  tb.profileTheme = profileTheme
+})
 
 /* ---------------- data ---------------- */
 const feed = ref(null)
@@ -72,15 +113,18 @@ async function load () {
 // justo debajo (el topbar crece de alto en móvil, así que no sirve un valor fijo).
 let ro = null
 function setTopbarH () {
-  const tb = document.querySelector('.topbar')
+  const tb = topbarRef.value
   if (tb) document.documentElement.style.setProperty('--topbar-h', tb.offsetHeight + 'px')
 }
-onMounted(() => {
-  load(); timer = setInterval(load, 120000); document.documentElement.lang = lang.value
+onMounted(async () => {
+  load(); timer = setInterval(load, 120000)
   nextTick(setTopbarH)
-  const tb = document.querySelector('.topbar')
+  const tb = topbarRef.value
   if (tb && 'ResizeObserver' in window) { ro = new ResizeObserver(setTopbarH); ro.observe(tb) }
   window.addEventListener('resize', setTopbarH)
+  // Identidad del ecosistema: sin vault, el topbar simplemente no abre el perfil.
+  identityInst.value = await getIdentity()
+  if (identityInst.value) reputationInst.value = await getReputation()
 })
 onUnmounted(() => { clearInterval(timer); ro?.disconnect(); window.removeEventListener('resize', setTopbarH) })
 
@@ -143,17 +187,23 @@ function noteFor (code, letter) {
 
 <template>
   <div class="app">
-    <header class="topbar">
-      <div class="brand"><img src="/icon.svg" alt="" width="30" height="30" /><span>Mundial 2026</span></div>
-      <div class="actions">
-        <div class="lang" role="group" aria-label="es / en">
-          <button :class="{ on: lang === 'es' }" @click="setLang('es')">ES</button>
-          <button :class="{ on: lang === 'en' }" @click="setLang('en')">EN</button>
-        </div>
-        <dotrino-install :lang="lang"></dotrino-install>
-        <dotrino-support href="https://ko-fi.com/dotrino" repo="imdotrino/dotrino-mundial" discord="https://discord.gg/D648uq7cth" :lang="lang"></dotrino-support>
-      </div>
-    </header>
+    <!-- Topbar estándar del ecosistema (§5): marca + volver + idioma + perfil +
+         moneda de support. `:lang.attr` fuerza el atributo: el componente expone
+         `lang` como getter sin setter, y Vue, al setearlo como propiedad DOM, se
+         lo tragaría en silencio. -->
+    <dotrino-topbar
+      ref="topbarRef"
+      brand="Mundial 2026"
+      icon="/icon.svg"
+      brand-href="./"
+      :lang.attr="lang"
+      profile
+      support-href="https://ko-fi.com/dotrino"
+      support-repo="imdotrino/dotrino-mundial"
+      support-discord="https://discord.gg/D648uq7cth"
+      @dotrino-lang="onLang">
+      <dotrino-install slot="end" :lang="lang"></dotrino-install>
+    </dotrino-topbar>
 
     <main class="wrap">
       <h1 class="tagline">{{ t.tagline }}</h1>
