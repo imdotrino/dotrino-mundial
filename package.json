@@ -3,11 +3,12 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "App informativa del Mundial 2026 del ecosistema Dotrino: resultados oficiales, grupos y clasificación",
+  "description": "App informativa del Mundial 2026 del ecosistema Dotrino: resultados oficiales, grupos y clasificaci\u00f3n",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@dotrino/identity": "0.33.0",
@@ -19,6 +20,7 @@
   "devDependencies": {
     "@vitejs/plugin-vue": "5.2.1",
     "vite": "5.4.10",
-    "vite-plugin-pwa": "0.20.5"
+    "vite-plugin-pwa": "0.20.5",
+    "typescript": "5.9.3"
   }
 }
