@@ -43,7 +43,7 @@ export async function fetchOfficialFeed () {
     const res = await fetch(RESULTS_URL + '/official', { signal: ctrl.signal }).finally(() => clearTimeout(timer))
     if (!res.ok) return null
     const sf = await res.json()
-    if (!(await verifyFeed(sf))) { console.warn('feed oficial: firma inválida (descartado)'); return null }
+    if (!(await verifyFeed(sf))) { console.warn('official feed: invalid signature (discarded)'); return null }
     return sf.data
   } catch {
     return null
