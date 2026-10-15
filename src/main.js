@@ -5,6 +5,7 @@ import { registerSW } from 'virtual:pwa-register'
 import '@dotrino/topbar'
 import '@dotrino/install'
 import App from './App.vue'
+import '@dotrino/theme/theme.css'
 import './style.css'
 
 // Recarga al tomar control el SW nuevo + re-chequeo periódico (CONVENCIONES §3).

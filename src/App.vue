@@ -70,25 +70,12 @@ const identityInst = ref(null)
 const reputationInst = ref(null)
 const topbarRef = ref(null)
 
-// Tema del modal de perfil (el topbar es su dueño), acorde al claro de la app.
-const profileTheme = {
-  '--ccp-bg': '#ffffff', '--ccp-bg-2': '#f4f7f9', '--ccp-bg-3': '#eaeff3', '--ccp-bg-4': '#e3e9ed',
-  '--ccp-border': '#cfd8de', '--ccp-text': '#181c1e', '--ccp-muted': '#4a5560',
-  '--ccp-accent': '#00658c', '--ccp-accent-2': '#00506f', '--ccp-accent-text': '#ffffff',
-  '--ccp-gold': '#b3791a', '--ccp-derived': '#b07f00',
-  '--ccp-online': '#1a7a3a', '--ccp-affinity': '#2f6fa6', '--ccp-input-bg': '#f1f4f6', '--ccp-radius': '16px',
-  '--ccp-font': "'Quicksand', system-ui, -apple-system, 'Segoe UI', sans-serif",
-  '--ccp-font-headline': "'Quicksand', system-ui, -apple-system, 'Segoe UI', sans-serif",
-  '--ccp-font-mono': 'ui-monospace, monospace',
-}
-
 // Pasa identity/reputation/tema al topbar (propiedades JS del Web Component).
 watchEffect(() => {
   const tb = topbarRef.value
   if (!tb) return
   tb.identity = identityInst.value ?? null
   tb.reputation = reputationInst.value ?? null
-  tb.profileTheme = profileTheme
 })
 
 /* ---------------- data ---------------- */
@@ -197,7 +184,7 @@ function noteFor (code, letter) {
       icon="/icon.svg"
       brand-href="./"
       :lang.attr="lang"
-      profile
+      profile theme
       support-href="https://ko-fi.com/dotrino"
       support-repo="imdotrino/dotrino-mundial"
       support-discord="https://discord.gg/D648uq7cth"
