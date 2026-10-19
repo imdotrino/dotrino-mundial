@@ -3,36 +3,19 @@
 // pronosticador). La app NUNCA pega a ESPN/FIFA: solo habla con el relay, que
 // centraliza proveedores + fallback + cache + overrides firmados.
 
+import { verifyDeviceSig } from '@dotrino/identity'
+
 export const RESULTS_URL = import.meta.env.VITE_RESULTS_URL || 'https://results.dotrino.com'
 export const RESULTS_PUBKEY =
   '{"kty":"EC","crv":"P-256","x":"ZDjs6CfsBVvqSqK8RHdplk_rW4yYYMADjEf1uAu5ToE","y":"XS3OQPNnN7Bo_JXzsxACk2EtVODr9vpBrk4Y2qhOUaU"}'
 
-// Serialización canónica (idéntica al relay y al resto del ecosistema).
-function canonicalStringify (v) {
-  if (v === null || typeof v !== 'object') return JSON.stringify(v)
-  if (Array.isArray(v)) return '[' + v.map(canonicalStringify).join(',') + ']'
-  const ks = Object.keys(v).sort()
-  return '{' + ks.map((k) => JSON.stringify(k) + ':' + canonicalStringify(v[k])).join(',') + '}'
-}
-
-function b64ToBytes (b64) {
-  const bin = atob(b64)
-  const out = new Uint8Array(bin.length)
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i)
-  return out
-}
-
+// La firma se verifica con el pilar (@dotrino/identity): ECDSA P-256 + SHA-256 sobre la
+// forma canónica del ecosistema, la misma que usa el relay al firmar (server/sign.js).
+// La confianza sale de la pubkey PINEADA, no de la que viaje en el sobre.
 export async function verifyFeed (sf) {
-  try {
-    if (!sf || !sf.data || typeof sf.signature !== 'string') return false
-    if (sf.data.publickey !== RESULTS_PUBKEY) return false
-    const jwk = JSON.parse(RESULTS_PUBKEY)
-    const key = await crypto.subtle.importKey('jwk', jwk, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify'])
-    const bytes = new TextEncoder().encode(canonicalStringify(sf.data))
-    return await crypto.subtle.verify({ name: 'ECDSA', hash: { name: 'SHA-256' } }, key, b64ToBytes(sf.signature), bytes)
-  } catch {
-    return false
-  }
+  if (!sf || !sf.data || typeof sf.signature !== 'string') return false
+  if (sf.data.publickey !== RESULTS_PUBKEY) return false
+  return verifyDeviceSig({ publickey: RESULTS_PUBKEY, data: sf.data, signature: sf.signature })
 }
 
 /** Trae el feed oficial verificado. Devuelve `data` (con matches) o null. */

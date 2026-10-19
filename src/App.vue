@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onUnmounted, watch, watchEffect, nextTick } f
 import { getIdentity } from './services/identity.js'
 import { getReputation } from './services/reputation.js'
 import { fetchOfficialFeed } from './lib/feed.js'
-import { computeAll, matchesOnDate, todayStr, normalizeIso, playedByDate } from './lib/standings.js'
+import { computeAll, matchesOnDate, todayStr, normalizeIso, playedByDate, localDate } from './lib/standings.js'
 import { resolveBracket } from './lib/bracketData.js'
 import { TEAM_BY_CODE } from './lib/teams.js'
 import BracketBoard from './components/BracketBoard.vue'
@@ -138,10 +138,9 @@ const todayMatches = computed(() => {
     .filter((m) => m.kickoff && Date.parse(normalizeIso(m.kickoff)) > Date.now())
     .sort((a, b) => Date.parse(normalizeIso(a.kickoff)) - Date.parse(normalizeIso(b.kickoff)))
   if (!future.length) return { date: '', list: [], isToday: true }
-  const nd = localDateOf(future[0].kickoff)
-  return { date: nd, list: future.filter((m) => localDateOf(m.kickoff) === nd), isToday: false }
+  const nd = localDate(future[0].kickoff)
+  return { date: nd, list: future.filter((m) => localDate(m.kickoff) === nd), isToday: false }
 })
-function localDateOf (iso) { const d = new Date(normalizeIso(iso)); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
 
 /* ---------------- helpers de render ---------------- */
 const tm = (code) => TEAM_BY_CODE[code] || { code, name: code, flag: '🏳️' }
