@@ -3,11 +3,8 @@
 // cupo: «1º A», «2º C», «3º», «Gana 89») + marcador si el feed lo tiene.
 
 import { GROUP_LETTERS, TEAM_BY_CODE } from './teams.js'
-import { computeGroup, normalizeIso } from './standings.js'
+import { computeGroup, normalizeIso, normStage as norm, rankThirds } from './standings.js'
 import { R32, R16, QF, SF, FINAL, THIRD_PLACE, THIRD_SLOTS, allocateThirds } from './bracket.js'
-
-const norm = (s) => String(s || '').toLowerCase().replace(/_/g, '-')
-  .replace('quarter-final', 'quarterfinal').replace('semi-final', 'semifinal').replace('3rd-place', 'third-place')
 
 function sideOf (code, label) {
   const t = code && TEAM_BY_CODE[code]
@@ -47,12 +44,7 @@ export function resolveBracket (matches) {
 
   // Mejores 8 terceros (provisional): ranking de los 12 terceros actuales → top 8,
   // asignados a los 8 cupos de tercero por la regla FIFA. Así el bracket los muestra.
-  const gdr = (r) => r.gf - r.gc
-  const thirdsRanked = groups
-    .map((g, gi) => ({ row: g.table[2], gi }))
-    .filter((x) => x.row && x.row.team)
-    .sort((a, b) => b.row.pts - a.row.pts || gdr(b.row) - gdr(a.row) || b.row.gf - a.row.gf || a.row.team.code.localeCompare(b.row.team.code))
-  const top8 = thirdsRanked.slice(0, 8).map((x) => x.gi)
+  const top8 = rankThirds(groups).slice(0, 8).map((r) => r.gi)
   const alloc = allocateThirds(top8)
   const allDecided = groups.every((g) => g.remaining === 0)
   // Equipos que el feed YA colocó en una caja real de dieciseisavos. La asignación

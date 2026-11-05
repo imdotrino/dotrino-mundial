@@ -12,7 +12,8 @@ const isGroupMatch = (m) => {
   const h = TEAM_BY_CODE[m.home], a = TEAM_BY_CODE[m.away]
   return h && a && h.group === a.group
 }
-const isFinished = (m) => m.finished && m.homeGoals != null && m.awayGoals != null
+// Terminado y con marcador: cuenta para la tabla y sale en Resultados.
+export const isFinished = (m) => m.finished && m.homeGoals != null && m.awayGoals != null
 // En juego ahora: con marcador en vivo, sin terminar.
 const isLive = (m) => !m.finished && (m.status === 'in' || m.started) && m.homeGoals != null && m.awayGoals != null
 
@@ -109,14 +110,21 @@ function teamStatus (teams, rows, remaining) {
   return out
 }
 
+/**
+ * Los terceros actuales (posición 3 de cada grupo), del mejor al peor: los 8 primeros pasan.
+ * Cada fila lleva `letter` y `gi` (índice del grupo). Lo usan la tabla de terceros y la llave.
+ */
+export function rankThirds (groups) {
+  const thirds = groups
+    .map((g, gi) => ({ ...g.table[2], letter: g.letter, gi }))
+    .filter((r) => r && r.team)
+  return sortRows(thirds)
+}
+
 /** Todas las tablas + ranking de terceros (mejores 8 clasifican). */
 export function computeAll (matches) {
   const groups = GROUP_LETTERS.map((L) => computeGroup(L, matches))
-  // Terceros actuales (posición 3 de cada grupo) rankeados; top 8 avanzan.
-  const thirds = groups
-    .map((g) => ({ ...g.table[2], letter: g.letter }))
-    .filter((r) => r && r.team)
-  const ranked = sortRows(thirds).map((r, i) => ({ ...r, rank: i + 1, qualifies: i < 8 }))
+  const ranked = rankThirds(groups).map((r, i) => ({ ...r, rank: i + 1, qualifies: i < 8 }))
   return { groups, thirds: ranked }
 }
 
@@ -135,11 +143,9 @@ export function normalizeIso (iso) { return /[Z+]/.test(iso) ? iso : iso + 'Z' }
 export const todayStr = () => localDate(new Date().toISOString())
 
 /* ---------------- Resultados (partidos jugados) ---------------- */
-const isPlayed = (m) => m.finished && m.homeGoals != null && m.awayGoals != null
-
 /** Partidos jugados agrupados por fecha (más reciente primero). */
 export function playedByDate (matches) {
-  const played = matches.filter(isPlayed)
+  const played = matches.filter(isFinished)
     .sort((a, b) => Date.parse(normalizeIso(a.kickoff || 0)) - Date.parse(normalizeIso(b.kickoff || 0)))
   const days = []
   for (const m of played) {
@@ -153,7 +159,8 @@ export function playedByDate (matches) {
 
 /* ---------------- Llaves (eliminatorias) ---------------- */
 const STAGE_ORDER = ['round-of-32', 'round-of-16', 'quarterfinal', 'semifinal', 'third-place', 'final']
-const normStage = (s) => String(s || '').toLowerCase().replace(/_/g, '-')
+/** El nombre de la etapa tal como lo escriba el feed → uno solo (`quarterfinal`, `third-place`…). */
+export const normStage = (s) => String(s || '').toLowerCase().replace(/_/g, '-')
   .replace('quarter-final', 'quarterfinal').replace('semi-final', 'semifinal')
   .replace('3rd-place', 'third-place').replace('round-of-16-final', 'round-of-16')
 
