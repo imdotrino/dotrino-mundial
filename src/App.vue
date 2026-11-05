@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, watchEffect, nextTick } from 'vue'
+import { ref, shallowRef, computed, onMounted, onUnmounted, watch, watchEffect, nextTick } from 'vue'
 import { getIdentity } from './services/identity.js'
 import { getReputation } from './services/reputation.js'
 import { fetchOfficialFeed } from './lib/feed.js'
@@ -22,7 +22,7 @@ const I18N = {
     th: { pos: '#', team: 'Equipo', pj: 'PJ', g: 'G', e: 'E', p: 'P', gf: 'GF', gc: 'GC', dg: 'DG', pts: 'Pts' },
     group: 'Grupo', updated: 'Actualizado', verified: 'Feed verificado', source: 'Fuente: relay oficial (ESPN + FIFA)',
     st: { clasificado: 'Clasificado', disputa: 'En disputa', tercero: '3º (puede avanzar)', eliminado: 'Eliminado' },
-    note: { clasificado: 'Asegura top 2 del grupo.', tercero: 'Va 3º; avanza si está entre los 8 mejores terceros.', eliminado: 'Sin chance de top 2 ni 3º.', disputaPlay: (n) => `Se define en ${n === 1 ? 'el partido que falta' : 'los ' + n + ' partidos que faltan'} del grupo.` },
+    note: { clasificado: 'Asegura top 2 del grupo.', tercero: 'Va 3º; avanza si está entre los 8 mejores terceros.', eliminado: 'Sin chance de top 2 ni 3º.', disputaPlay: (/** @type {number} */ n) => `Se define en ${n === 1 ? 'el partido que falta' : 'los ' + n + ' partidos que faltan'} del grupo.` },
     thirdsIntro: 'Clasifican los 2 primeros de cada grupo (24) + los 8 mejores terceros. Ranking provisional de los 12 terceros:',
     qualifies: 'Clasifica', out: 'Fuera', loading: 'Cargando resultados oficiales…',
     err: 'No se pudo cargar el feed oficial. Reintenta en un momento.',
@@ -40,7 +40,7 @@ const I18N = {
     th: { pos: '#', team: 'Team', pj: 'P', g: 'W', e: 'D', p: 'L', gf: 'GF', gc: 'GA', dg: 'GD', pts: 'Pts' },
     group: 'Group', updated: 'Updated', verified: 'Verified feed', source: 'Source: official relay (ESPN + FIFA)',
     st: { clasificado: 'Qualified', disputa: 'In contention', tercero: '3rd (may advance)', eliminado: 'Eliminated' },
-    note: { clasificado: 'Top 2 secured.', tercero: 'Currently 3rd; advances if among the 8 best thirds.', eliminado: 'No chance of top 2 or 3rd.', disputaPlay: (n) => `Decided in the group's ${n} remaining match${n > 1 ? 'es' : ''}.` },
+    note: { clasificado: 'Top 2 secured.', tercero: 'Currently 3rd; advances if among the 8 best thirds.', eliminado: 'No chance of top 2 or 3rd.', disputaPlay: (/** @type {number} */ n) => `Decided in the group's ${n} remaining match${n > 1 ? 'es' : ''}.` },
     thirdsIntro: 'Top 2 of each group (24) + the 8 best thirds advance. Provisional ranking of the 12 thirds:',
     qualifies: 'Advances', out: 'Out', loading: 'Loading official results…',
     err: 'Could not load the official feed. Try again shortly.',
@@ -60,14 +60,20 @@ try {
   }
 } catch { /* modo privado */ }
 const saved = (() => { try { return localStorage.getItem(LANG_KEY) } catch { return null } })()
-const lang = ref((saved || (navigator.language || 'es').slice(0, 2)) === 'en' ? 'en' : 'es')
+const lang = ref(/** @type {'es'|'en'} */ ((saved || (navigator.language || 'es').slice(0, 2)) === 'en' ? 'en' : 'es'))
 const t = computed(() => I18N[lang.value])
 // El topbar ya persiste y fija document.documentElement.lang; aquí solo seguimos su evento.
+/** @param {CustomEvent<{ lang?: string }>} e */
 const onLang = (e) => { const l = e?.detail?.lang; if (l === 'es' || l === 'en') lang.value = l }
 
 /* ---------------- identidad (§6.1) ---------------- */
-const identityInst = ref(null)
-const reputationInst = ref(null)
+// shallowRef: la instancia de Identity no puede ir envuelta en el Proxy reactivo de un
+// ref() (el puente con el iframe hace postMessage y un Proxy no se puede clonar).
+/** @type {import('vue').ShallowRef<import('@dotrino/identity').Identity|null>} */
+const identityInst = shallowRef(null)
+/** @type {import('vue').ShallowRef<import('@dotrino/reputation').VaultReputation|null>} */
+const reputationInst = shallowRef(null)
+/** @type {import('vue').Ref<import('@dotrino/topbar').DotrinoTopbar|null>} */
 const topbarRef = ref(null)
 
 // Pasa identity/reputation/tema al topbar (propiedades JS del Web Component).
@@ -79,6 +85,7 @@ watchEffect(() => {
 })
 
 /* ---------------- data ---------------- */
+/** @type {import('vue').Ref<import('./types').OfficialFeed|null>} */
 const feed = ref(null)
 const state = ref('loading') // loading | ok | error
 // Recuerda el tab SOLO dentro de la sesión de la pestaña (sessionStorage): sobrevive
@@ -86,10 +93,11 @@ const state = ref('loading') // loading | ok | error
 const DEFAULT_TAB = 'llaves'
 const TAB_KEY = 'mundial.tab'
 const TAB_KEYS = ['hoy', 'resultados', 'llaves']
-const storedTab = (() => { try { const v = sessionStorage.getItem(TAB_KEY); return TAB_KEYS.includes(v) ? v : DEFAULT_TAB } catch { return DEFAULT_TAB } })()
+const storedTab = (() => { try { const v = sessionStorage.getItem(TAB_KEY); return v && TAB_KEYS.includes(v) ? v : DEFAULT_TAB } catch { return DEFAULT_TAB } })()
 const tab = ref(storedTab)
 watch(tab, (v) => { try { sessionStorage.setItem(TAB_KEY, v) } catch { /* modo privado */ } })
-let timer = null
+/** @type {ReturnType<typeof setInterval>|undefined} */
+let timer
 
 async function load () {
   const data = await fetchOfficialFeed()
@@ -98,6 +106,7 @@ async function load () {
 }
 // Mide la altura del topbar → variable CSS para que la barra de tabs quede sticky
 // justo debajo (el topbar crece de alto en móvil, así que no sirve un valor fijo).
+/** @type {ResizeObserver|null} */
 let ro = null
 function setTopbarH () {
   const tb = topbarRef.value
@@ -135,7 +144,7 @@ const todayMatches = computed(() => {
   const today = matchesOnDate(matches.value, todayStr())
   if (today.length) return { date: todayStr(), list: today, isToday: true }
   const future = matches.value
-    .filter((m) => m.kickoff && Date.parse(normalizeIso(m.kickoff)) > Date.now())
+    .filter(/** @returns {m is import('./types').FeedMatch & { kickoff: string }} */ (m) => !!m.kickoff && Date.parse(normalizeIso(m.kickoff)) > Date.now())
     .sort((a, b) => Date.parse(normalizeIso(a.kickoff)) - Date.parse(normalizeIso(b.kickoff)))
   if (!future.length) return { date: '', list: [], isToday: true }
   const nd = localDate(future[0].kickoff)
@@ -143,15 +152,26 @@ const todayMatches = computed(() => {
 })
 
 /* ---------------- helpers de render ---------------- */
+/** @param {string} code */
 const tm = (code) => TEAM_BY_CODE[code] || { code, name: code, flag: '🏳️' }
+/** @param {import('./types').Row} r */
 const gd = (r) => r.gf - r.gc
+/** @param {string} iso */
 function fmtTime (iso) { return new Date(normalizeIso(iso)).toLocaleTimeString(lang.value, { hour: '2-digit', minute: '2-digit' }) }
+/** @param {string} iso */
 function fmtDayTime (iso) { return new Date(normalizeIso(iso)).toLocaleString(lang.value, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }
+/** @param {string} s YYYY-MM-DD */
 function fmtDate (s) { if (!s) return ''; const [y, m, d] = s.split('-'); return new Date(+y, +m - 1, +d).toLocaleDateString(lang.value, { weekday: 'long', day: 'numeric', month: 'long' }) }
+/**
+ * @param {string} code
+ * @param {string} letter
+ * @returns {import('./types').TeamStatus|null}
+ */
 function statusOf (code, letter) {
   const g = all.value.groups.find((x) => x.letter === letter)
   return g ? g.status[code] : null
 }
+/** @param {import('./types').TeamStatus|null} s */
 function stKey (s) { // mapea a etiqueta visible
   if (!s) return 'disputa'
   if (s.label === 'clasificado') return 'clasificado'
@@ -159,6 +179,11 @@ function stKey (s) { // mapea a etiqueta visible
   if (s.advance === 'eliminado') return 'eliminado'
   return 'disputa'
 }
+/**
+ * @param {string} code
+ * @param {string} letter
+ * @returns {string}
+ */
 function noteFor (code, letter) {
   const _t = t.value
   const g = all.value.groups.find((x) => x.letter === letter)

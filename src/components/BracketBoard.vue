@@ -1,7 +1,24 @@
 <script setup>
 import { LEFT_COLS, RIGHT_COLS, FINAL, THIRD_PLACE, connectorsFor } from '../lib/bracket.js'
-const props = defineProps({ data: Object, stages: Object, labels: Object })
-const bx = (num) => props.data.boxes[num] || { home: { name: '—' }, away: { name: '—' }, hg: null }
+/** @typedef {import('../types').Box} Box */
+const props = defineProps({
+  data: { type: /** @type {import('vue').PropType<import('../types').Bracket>} */ (Object), required: true },
+  /** nombre visible de cada etapa (`round-of-32`, `final`…) */
+  stages: { type: /** @type {import('vue').PropType<Record<string, string>>} */ (Object), required: true },
+  labels: { type: /** @type {import('vue').PropType<Record<string, string>>} */ (Object), default: undefined },
+})
+/** @returns {Box['home']} */
+const emptySide = () => ({ code: '', flag: '', name: '—', real: false })
+/**
+ * La caja de un partido, o una vacía («—») si la llave todavía no la tiene.
+ * @param {number} num número FIFA del partido
+ * @returns {Box}
+ */
+const bx = (num) => props.data.boxes[num] || {
+  home: emptySide(), away: emptySide(),
+  hg: null, ag: null, hp: null, ap: null, status: 'scheduled', finished: false, kickoff: null, _hc: null, _ac: null,
+}
+/** @param {number[]} nums */
 const conns = (nums) => connectorsFor(nums.length)
 </script>
 

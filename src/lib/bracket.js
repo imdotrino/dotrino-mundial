@@ -2,10 +2,18 @@
 // clasificados: 12 primeros + 12 segundos + 8 mejores terceros. Numeración FIFA:
 // dieciseisavos 73-88, octavos 89-96, cuartos 97-100, semis 101-102, 3º 103, final 104.
 
+/** @typedef {import('../types').Slot} Slot */
+/** @typedef {import('../types').R32Def} R32Def */
+/** @typedef {import('../types').LaterDef} LaterDef */
+
+/** @type {(g: number) => Slot} */
 const W = (g) => ({ kind: 'W', group: g })
+/** @type {(g: number) => Slot} */
 const RU = (g) => ({ kind: 'RU', group: g })
+/** @type {() => Slot} */
 const T = () => ({ kind: '3rd' })
 
+/** @type {R32Def[]} */
 export const R32 = [
   { num: 73, home: RU(0), away: RU(1) },
   { num: 74, home: W(4), away: T() },
@@ -24,15 +32,20 @@ export const R32 = [
   { num: 87, home: W(10), away: T() },
   { num: 88, home: RU(3), away: RU(6) },
 ]
+/** @type {LaterDef[]} */
 export const R16 = [
   { num: 89, from: [74, 77] }, { num: 90, from: [73, 75] }, { num: 91, from: [76, 78] }, { num: 92, from: [79, 80] },
   { num: 93, from: [83, 84] }, { num: 94, from: [81, 82] }, { num: 95, from: [86, 88] }, { num: 96, from: [85, 87] },
 ]
+/** @type {LaterDef[]} */
 export const QF = [
   { num: 97, from: [89, 90] }, { num: 98, from: [93, 94] }, { num: 99, from: [91, 92] }, { num: 100, from: [95, 96] },
 ]
+/** @type {LaterDef[]} */
 export const SF = [{ num: 101, from: [97, 98] }, { num: 102, from: [99, 100] }]
+/** @type {LaterDef} */
 export const FINAL = { num: 104, from: [101, 102] }
+/** @type {LaterDef} */
 export const THIRD_PLACE = { num: 103, from: [101, 102] }
 
 // Slots de "mejor tercero" en dieciseisavos (regla FIFA por posición de bombo).
@@ -50,10 +63,17 @@ export const THIRD_SLOTS = [
 ]
 // Asigna los 8 grupos cuyos terceros clasifican a los 8 slots (backtracking
 // determinista; aproxima el Anexo de la FIFA). Devuelve array[thirdSlot]=idxGrupo.
+/**
+ * @param {number[]} qualifiedGroups índices de grupo (A=0 … L=11) de los 8 terceros que pasan
+ * @returns {Array<number|null>} por cada slot de tercero, el índice de grupo (o null)
+ */
 export function allocateThirds (qualifiedGroups) {
+  /** @type {Array<number|null>} */
   const result = new Array(THIRD_SLOTS.length).fill(null)
   if (qualifiedGroups.length !== THIRD_SLOTS.length) return result
+  /** @type {Set<number>} */
   const used = new Set()
+  /** @type {(slot: number) => boolean} */
   const solve = (slot) => {
     if (slot >= THIRD_SLOTS.length) return true
     for (const g of THIRD_SLOTS[slot].allowed) {
@@ -69,6 +89,7 @@ export function allocateThirds (qualifiedGroups) {
 }
 
 // Mapa num → definición (slots o feeders).
+/** @type {Record<number, R32Def|LaterDef>} */
 export const BY_NUM = {}
 R32.forEach((m) => { BY_NUM[m.num] = m })
 ;[...R16, ...QF, ...SF, FINAL, THIRD_PLACE].forEach((m) => { BY_NUM[m.num] = m })
@@ -89,6 +110,10 @@ export const RIGHT_COLS = [
 
 // Conectores: con justify-content:space-around el centro del partido i (de n)
 // cae en (2i+1)/(2n). Unimos de a pares con líneas en %.
+/**
+ * @param {number} n partidos en la columna
+ * @returns {Array<{ topPct: number, botPct: number, single: boolean }>}
+ */
 export function connectorsFor (n) {
   if (n <= 1) return [{ topPct: 50, botPct: 50, single: true }]
   const out = []

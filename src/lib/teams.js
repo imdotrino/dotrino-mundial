@@ -20,7 +20,11 @@ const RAW = [
 
 export const GROUP_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']
 
+/** @typedef {import('../types').Team} Team */
+
+/** @type {Team[]} */
 export const TEAMS = []
+/** @type {import('../types').Group[]} */
 export const GROUPS = RAW.map((raw, gi) => {
   const letter = GROUP_LETTERS[gi]
   const teams = raw.map(([name, flag, code], pi) => {
@@ -31,7 +35,12 @@ export const GROUPS = RAW.map((raw, gi) => {
   return { letter, teams }
 })
 
+/** @type {Record<string, Team>} */
 export const TEAM_BY_CODE = {}
 TEAMS.forEach((t) => { TEAM_BY_CODE[t.code] = t })
 
+/**
+ * @param {string} code código FIFA
+ * @returns {Team|null}
+ */
 export function teamByCode (code) { return TEAM_BY_CODE[code] || null }

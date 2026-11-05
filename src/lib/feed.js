@@ -12,13 +12,21 @@ export const RESULTS_PUBKEY =
 // La firma se verifica con el pilar (@dotrino/identity): ECDSA P-256 + SHA-256 sobre la
 // forma canónica del ecosistema, la misma que usa el relay al firmar (server/sign.js).
 // La confianza sale de la pubkey PINEADA, no de la que viaje en el sobre.
+/**
+ * @param {unknown} sf lo que contestó el relay, sin validar
+ * @returns {Promise<boolean>} true si es un {@link import('../types').SignedFeed} firmado con la pubkey pineada
+ */
 export async function verifyFeed (sf) {
-  if (!sf || !sf.data || typeof sf.signature !== 'string') return false
-  if (sf.data.publickey !== RESULTS_PUBKEY) return false
-  return verifyDeviceSig({ publickey: RESULTS_PUBKEY, data: sf.data, signature: sf.signature })
+  const s = /** @type {Partial<import('../types').SignedFeed> | null} */ (sf)
+  if (!s || !s.data || typeof s.signature !== 'string') return false
+  if (s.data.publickey !== RESULTS_PUBKEY) return false
+  return verifyDeviceSig({ publickey: RESULTS_PUBKEY, data: s.data, signature: s.signature })
 }
 
-/** Trae el feed oficial verificado. Devuelve `data` (con matches) o null. */
+/**
+ * Trae el feed oficial verificado. Devuelve `data` (con matches) o null.
+ * @returns {Promise<import('../types').OfficialFeed|null>}
+ */
 export async function fetchOfficialFeed () {
   try {
     const ctrl = new AbortController()
@@ -27,7 +35,7 @@ export async function fetchOfficialFeed () {
     if (!res.ok) return null
     const sf = await res.json()
     if (!(await verifyFeed(sf))) { console.warn('official feed: invalid signature (discarded)'); return null }
-    return sf.data
+    return /** @type {import('../types').SignedFeed} */ (sf).data
   } catch {
     return null
   }
