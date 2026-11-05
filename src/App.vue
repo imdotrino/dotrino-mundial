@@ -3,7 +3,8 @@ import { ref, shallowRef, computed, onMounted, onUnmounted, watch, watchEffect, 
 import { getIdentity } from './services/identity.js'
 import { getReputation } from './services/reputation.js'
 import { fetchOfficialFeed } from './lib/feed.js'
-import { computeAll, matchesOnDate, todayStr, normalizeIso, playedByDate, localDate } from './lib/standings.js'
+import { applyOverrides } from './lib/overrides.js'
+import { matchesOnDate, todayStr, normalizeIso, playedByDate, localDate } from './lib/standings.js'
 import { resolveBracket } from './lib/bracketData.js'
 import { TEAM_BY_CODE } from './lib/teams.js'
 import BracketBoard from './components/BracketBoard.vue'
@@ -13,38 +14,26 @@ const I18N = {
   es: {
     tagline: 'Resultados oficiales del Mundial 2026, en vivo. Quién juega hoy, cómo va cada grupo y qué necesita cada equipo para clasificar.',
     tabs: { hoy: 'Hoy', resultados: 'Resultados', llaves: 'Llaves' },
-    thirdsTitle: 'Mejores terceros',
     resultsTitle: 'Partidos jugados', noPlayed: 'Aún no se ha jugado ningún partido.',
     bracketTitle: 'Eliminatorias', bracketNote: 'Se va llenando con los resultados: los cruces aún sin definir muestran el clasificado pendiente (p. ej. «2º A», «3º»).',
     stages: { 'round-of-32': 'Dieciseisavos', 'round-of-16': 'Octavos', quarterfinal: 'Cuartos de final', semifinal: 'Semifinales', 'third-place': 'Tercer puesto', final: 'Final' },
     today: 'Partidos de hoy', noToday: 'No hay partidos hoy. Próximos:',
     live: 'EN VIVO', final: 'Final', vs: 'vs',
-    th: { pos: '#', team: 'Equipo', pj: 'PJ', g: 'G', e: 'E', p: 'P', gf: 'GF', gc: 'GC', dg: 'DG', pts: 'Pts' },
-    group: 'Grupo', updated: 'Actualizado', verified: 'Feed verificado', source: 'Fuente: relay oficial (ESPN + FIFA)',
-    st: { clasificado: 'Clasificado', disputa: 'En disputa', tercero: '3º (puede avanzar)', eliminado: 'Eliminado' },
-    note: { clasificado: 'Asegura top 2 del grupo.', tercero: 'Va 3º; avanza si está entre los 8 mejores terceros.', eliminado: 'Sin chance de top 2 ni 3º.', disputaPlay: (/** @type {number} */ n) => `Se define en ${n === 1 ? 'el partido que falta' : 'los ' + n + ' partidos que faltan'} del grupo.` },
-    thirdsIntro: 'Clasifican los 2 primeros de cada grupo (24) + los 8 mejores terceros. Ranking provisional de los 12 terceros:',
-    qualifies: 'Clasifica', out: 'Fuera', loading: 'Cargando resultados oficiales…',
+    updated: 'Actualizado', verified: 'Feed verificado', source: 'Fuente: relay oficial (ESPN + FIFA)',
+    loading: 'Cargando resultados oficiales…',
     err: 'No se pudo cargar el feed oficial. Reintenta en un momento.',
-    legend: 'Verde: top 2 (clasifican). Ámbar: 3º (mejor tercero).',
   },
   en: {
     tagline: 'Official 2026 World Cup results, live. Who plays today, how each group stands and what each team needs to advance.',
     tabs: { hoy: 'Today', resultados: 'Results', llaves: 'Bracket' },
-    thirdsTitle: 'Best thirds',
     resultsTitle: 'Played matches', noPlayed: 'No matches played yet.',
     bracketTitle: 'Knockout stage', bracketNote: 'Fills in with results: undecided ties show the pending qualifier (e.g. “2nd A”, “3rd”).',
     stages: { 'round-of-32': 'Round of 32', 'round-of-16': 'Round of 16', quarterfinal: 'Quarterfinals', semifinal: 'Semifinals', 'third-place': 'Third place', final: 'Final' },
     today: "Today's matches", noToday: 'No matches today. Coming up:',
     live: 'LIVE', final: 'Final', vs: 'vs',
-    th: { pos: '#', team: 'Team', pj: 'P', g: 'W', e: 'D', p: 'L', gf: 'GF', gc: 'GA', dg: 'GD', pts: 'Pts' },
-    group: 'Group', updated: 'Updated', verified: 'Verified feed', source: 'Source: official relay (ESPN + FIFA)',
-    st: { clasificado: 'Qualified', disputa: 'In contention', tercero: '3rd (may advance)', eliminado: 'Eliminated' },
-    note: { clasificado: 'Top 2 secured.', tercero: 'Currently 3rd; advances if among the 8 best thirds.', eliminado: 'No chance of top 2 or 3rd.', disputaPlay: (/** @type {number} */ n) => `Decided in the group's ${n} remaining match${n > 1 ? 'es' : ''}.` },
-    thirdsIntro: 'Top 2 of each group (24) + the 8 best thirds advance. Provisional ranking of the 12 thirds:',
-    qualifies: 'Advances', out: 'Out', loading: 'Loading official results…',
+    updated: 'Updated', verified: 'Verified feed', source: 'Source: official relay (ESPN + FIFA)',
+    loading: 'Loading official results…',
     err: 'Could not load the official feed. Try again shortly.',
-    legend: 'Green: top 2 (advance). Amber: 3rd (best-third spot).',
   },
 }
 // El idioma es del ecosistema: el topbar es dueño del toggle y lo persiste en
@@ -124,17 +113,8 @@ onMounted(async () => {
 })
 onUnmounted(() => { clearInterval(timer); ro?.disconnect(); window.removeEventListener('resize', setTopbarH) })
 
-// Al abrir la pestaña Grupos, si hay un partido en vivo, lleva a ese grupo.
-function scrollToLiveGroup () {
-  nextTick(() => {
-    const el = document.querySelector('.gcard.has-live')
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  })
-}
-watch(tab, (v) => { if (v === 'grupos') scrollToLiveGroup() })
-
-const matches = computed(() => (feed.value && feed.value.matches) || [])
-const all = computed(() => computeAll(matches.value))
+// Lo que el admin carga a mano en el relay (`overrides`) manda sobre el proveedor.
+const matches = computed(() => feed.value ? applyOverrides(feed.value.matches, feed.value.overrides) : [])
 const played = computed(() => playedByDate(matches.value))
 const bracket = computed(() => resolveBracket(matches.value))
 const updatedAt = computed(() => feed.value && feed.value.updatedAt ? new Date(feed.value.updatedAt).toLocaleString(lang.value) : '')
@@ -154,46 +134,12 @@ const todayMatches = computed(() => {
 /* ---------------- helpers de render ---------------- */
 /** @param {string} code */
 const tm = (code) => TEAM_BY_CODE[code] || { code, name: code, flag: '🏳️' }
-/** @param {import('./types').Row} r */
-const gd = (r) => r.gf - r.gc
 /** @param {string} iso */
 function fmtTime (iso) { return new Date(normalizeIso(iso)).toLocaleTimeString(lang.value, { hour: '2-digit', minute: '2-digit' }) }
 /** @param {string} iso */
 function fmtDayTime (iso) { return new Date(normalizeIso(iso)).toLocaleString(lang.value, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }
 /** @param {string} s YYYY-MM-DD */
 function fmtDate (s) { if (!s) return ''; const [y, m, d] = s.split('-'); return new Date(+y, +m - 1, +d).toLocaleDateString(lang.value, { weekday: 'long', day: 'numeric', month: 'long' }) }
-/**
- * @param {string} code
- * @param {string} letter
- * @returns {import('./types').TeamStatus|null}
- */
-function statusOf (code, letter) {
-  const g = all.value.groups.find((x) => x.letter === letter)
-  return g ? g.status[code] : null
-}
-/** @param {import('./types').TeamStatus|null} s */
-function stKey (s) { // mapea a etiqueta visible
-  if (!s) return 'disputa'
-  if (s.label === 'clasificado') return 'clasificado'
-  if (s.advance === 'tercero') return 'tercero'
-  if (s.advance === 'eliminado') return 'eliminado'
-  return 'disputa'
-}
-/**
- * @param {string} code
- * @param {string} letter
- * @returns {string}
- */
-function noteFor (code, letter) {
-  const _t = t.value
-  const g = all.value.groups.find((x) => x.letter === letter)
-  const s = g && g.status[code]
-  if (!s) return ''
-  if (s.label === 'clasificado') return _t.note.clasificado
-  if (s.advance === 'eliminado') return _t.note.eliminado
-  if (s.advance === 'tercero') return _t.note.tercero
-  return s.remaining ? _t.note.disputaPlay(s.remaining) : ''
-}
 </script>
 
 <template>
@@ -228,7 +174,7 @@ function noteFor (code, letter) {
           <span v-if="updatedAt">{{ t.updated }}: {{ updatedAt }}</span>
         </div>
 
-        <div class="tabsbar" :class="{ sticky: tab === 'resultados' || tab === 'grupos' }">
+        <div class="tabsbar" :class="{ sticky: tab === 'resultados' }">
           <nav class="tabs" role="tablist">
             <button v-for="(label, k) in t.tabs" :key="k" role="tab" :aria-selected="tab === k" :class="{ on: tab === k }" @click="tab = k">{{ label }}</button>
           </nav>
@@ -269,57 +215,6 @@ function noteFor (code, letter) {
               </div>
             </div>
           </div>
-        </section>
-
-        <!-- GRUPOS -->
-        <section v-if="tab === 'grupos'" class="panel">
-          <p class="legend">{{ t.legend }}</p>
-          <div class="groups">
-            <div v-for="g in all.groups" :key="g.letter" class="gcard" :class="{ 'has-live': g.live && g.live.length }">
-              <h3>{{ t.group }} {{ g.letter }}</h3>
-              <table class="gtable">
-                <thead><tr><th>{{ t.th.pos }}</th><th class="l">{{ t.th.team }}</th><th>{{ t.th.pj }}</th><th>{{ t.th.g }}</th><th>{{ t.th.e }}</th><th>{{ t.th.p }}</th><th>{{ t.th.dg }}</th><th>{{ t.th.pts }}</th></tr></thead>
-                <tbody>
-                  <tr v-for="(r, i) in g.table" :key="r.team.code" :class="{ q1: i < 2, q3: i === 2, playing: r.live }">
-                    <td>{{ i + 1 }}</td>
-                    <td class="l"><span class="flag">{{ r.team.flag }}</span> {{ r.team.name }}<span v-if="r.live" class="livedot" :title="t.live"></span></td>
-                    <td>{{ r.pj }}</td><td>{{ r.w }}</td><td>{{ r.d }}</td><td>{{ r.l }}</td>
-                    <td>{{ gd(r) > 0 ? '+' + gd(r) : gd(r) }}</td><td class="pts">{{ r.pts }}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <div v-for="(lm, k) in g.live" :key="'lv' + k" class="livematch">
-                <span class="livedot"></span><span class="lvtag">{{ t.live }}</span>
-                <span class="flag">{{ tm(lm.home).flag }}</span><b>{{ lm.homeGoals }}</b>
-                <span class="lvdash">-</span>
-                <b>{{ lm.awayGoals }}</b><span class="flag">{{ tm(lm.away).flag }}</span>
-              </div>
-              <ul class="outlook">
-                <li v-for="r in g.table" :key="r.team.code" :class="stKey(statusOf(r.team.code, g.letter))">
-                  <span class="flag">{{ r.team.flag }}</span>
-                  <span class="oname">{{ r.team.name }}</span>
-                  <span class="otag">{{ t.st[stKey(statusOf(r.team.code, g.letter))] }}</span>
-                  <span class="onote">{{ noteFor(r.team.code, g.letter) }}</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <!-- Mejores terceros: al fondo de la pestaña Grupos -->
-          <h2 class="ph thirds-h">{{ t.thirdsTitle }}</h2>
-          <p class="legend">{{ t.thirdsIntro }}</p>
-          <table class="gtable thirds">
-            <thead><tr><th>{{ t.th.pos }}</th><th class="l">{{ t.th.team }}</th><th>{{ t.group }}</th><th>{{ t.th.pj }}</th><th>{{ t.th.dg }}</th><th>{{ t.th.pts }}</th><th></th></tr></thead>
-            <tbody>
-              <tr v-for="r in all.thirds" :key="r.team.code" :class="{ q1: r.qualifies }">
-                <td>{{ r.rank }}</td>
-                <td class="l"><span class="flag">{{ r.team.flag }}</span> {{ r.team.name }}</td>
-                <td>{{ r.letter }}</td><td>{{ r.pj }}</td>
-                <td>{{ (r.gf - r.gc) > 0 ? '+' + (r.gf - r.gc) : (r.gf - r.gc) }}</td><td class="pts">{{ r.pts }}</td>
-                <td><span class="otag" :class="r.qualifies ? 'clasificado' : 'eliminado'">{{ r.qualifies ? t.qualifies : t.out }}</span></td>
-              </tr>
-            </tbody>
-          </table>
         </section>
 
         <!-- LLAVES -->
